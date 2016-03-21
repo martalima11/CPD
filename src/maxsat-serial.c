@@ -5,6 +5,7 @@
 #include <omp.h>
 
 #define max(A,B) ((A) >= (B)?(A):(B))
+#define DEBUG 1
 
 typedef struct node {
     int level, Mc, mc;
@@ -12,8 +13,7 @@ typedef struct node {
     int *vars, *cls_evals;
 } node;
 
-node *create_node(int Mc, int mc, int level, node *father){
-
+node *create_node(int Mc, int mc, int level, int ncl, node *father){
     node *new_node = (node*) malloc(sizeof(node));
     new_node -> level = level;
     new_node -> Mc = Mc;
@@ -21,35 +21,83 @@ node *create_node(int Mc, int mc, int level, node *father){
     new_node -> u = father;
     new_node -> l = NULL;
     new_node -> r = NULL;
-    /*new_node -> vars = (int*) malloc(level * sizeof(int));*/
-    /*new_node -> cls_evals = (int*) malloc( sizeof(int));*/
-    /* popular com os valores do nivel anterior? */
+    new_node -> vars = (int*) malloc(level * sizeof(int));
+    new_node -> cls_evals = (int*) malloc(ncl * sizeof(int));
     return new_node;
 }
 
 void delete_node(node *ptr){
-    /*free(ptr->cls_evals);
-    free(ptr->vars);*/
+    free(ptr->vars);
+    free(ptr->cls_evals);
     free(ptr);
     return;
 }
 
-void solve(node *ptr, int i, int nvar){
-    int j;
+void solve(node *ptr, int nvar, int **cls, int ncl){
+    int i, j, res;
+
+    for(i = 0; i < ncl; i++){
+        if(ptr->level){
+            /* Inicializa a posicao com base no nó progenitor */
+            ptr->cls_evals[i] = ptr->u->cls_evals[i];
+            /* So precisa de calcular se a clausula nao for ainda verdadeira nem falsa */
+            if(!ptr->u->cls_evals[i]){
+                /* Compara variaveis das clausulas ate ao presente nivel */
+                for(j=0; cls[i][j] && abs(cls[i][j]) <= ptr->level; j++){
+                    /* calcula o resultado, da atribuicao de variavel, na clausula */
+                    res = cls[i][j] + ptr->vars[abs(cls[i][j])-1];
+                    /* se resultado for 0 quer dizer que os valores sao simetricos,
+                      caso contrario a clausula e verdadeira e nao vale a pena ver as outras variaveis*/
+                    if(res){
+                        ptr->cls_evals[i] = 1;
+                        ptr->mc++;
+                        break;
+                    }
+                }
+                /* Se a clausula tiver sido lida ate ao fim e ainda assim nao for verdadeira,
+                   significa que ela e falsa */
+                if(!cls[i][j] && !ptr->cls_evals[i]){
+                    ptr->cls_evals[i] = -1;
+                    ptr->Mc--;
+                }
+            }
+        }else{
+            /* Inicializa o promeiro no */
+            ptr->cls_evals[i] = 0;
+        }
+    }
+
+    /* fim de calculos */
+
     for(j=0; j<ptr->level; j++){
         printf("     ");
     }
-    printf("n: %d; i: %d\n", ptr->level, i);
-    /*fazer calculos e alterar Mc e mc*/
+    printf("n: %d; Mc: %d; mc: %d\n", ptr->level, ptr->Mc, ptr->mc);
 
-    /* fim de calculos, fecundar duas posições de memoria e executar processo de adocao nos dois */
-    if(ptr->level < nvar){
-        ptr->l = create_node(4, 0, ptr->level+1, ptr);
-        ptr->r = create_node(4, 0, ptr->level+1, ptr);
-        solve(ptr->l, 2*i, nvar);
-        solve(ptr->r, 2*i+1, nvar);
-        free(ptr->l);
-        free(ptr->r);
+    /*Ciclo para ver o valor das clausulas em cada iteraceo */
+    /*
+    printf("\n");
+    for(i = 0; i < ncl; i++){
+        printf("Clause #%d: %d\n", i+1, ptr->cls_evals[i]);
+    }
+    printf("\n");
+    */
+    /* fecundar duas posições de memoria e executar processo de adocao nos dois */
+    if(ptr->Mc == ptr->mc){
+        /*printf("DONE\n");*/
+    }else if(ptr->level < nvar){
+        ptr->l = create_node(ptr->Mc, ptr->mc, ptr->level+1, ncl, ptr);
+        ptr->r = create_node(ptr->Mc, ptr->mc, ptr->level+1, ncl, ptr);
+        for(i=0;i<ptr->level;i++){
+            ptr->l->vars[i] = ptr->vars[i];
+            ptr->r->vars[i] = ptr->vars[i];
+        }
+        ptr->l->vars[ptr->level] = -(ptr->level+1);
+        ptr->r->vars[ptr->level] = ptr->level+1;
+        solve(ptr->l, nvar, cls, ncl);
+        solve(ptr->r, nvar, cls, ncl);
+        delete_node(ptr->l);
+        delete_node(ptr->r);
     }
     return;
 }
@@ -119,10 +167,11 @@ int main(int argc, char *argv[]){
         }
     }
 
-    btree = create_node(ncl, 0, 0, NULL);
-    printf("Node %d has Mc: %d and mc: %d\n", btree->level, btree->Mc, btree->mc);
-    solve(btree, 0, nvar);
-    free(btree);
+    btree = create_node(ncl, 0, 0, ncl, NULL);
+
+    solve(btree, nvar, cls, ncl);
+
+    delete_node(btree);
 
     for(i=0; i<ncl; i++){
         free(cls[i]);
