@@ -5,7 +5,13 @@
 #include <omp.h>
 
 #define max(A,B) ((A) >= (B)?(A):(B))
-#define DEBUG 1
+#define DEBUG 0
+
+typedef struct output {
+    int max;
+    int nMax;
+    int *path;
+} output;
 
 typedef struct node {
     int level, Mc, mc;
@@ -33,7 +39,7 @@ void delete_node(node *ptr){
     return;
 }
 
-void solve(node *ptr, int nvar, int **cls, int ncl){
+void solve(node *ptr, int nvar, int **cls, int ncl, output *op){
     int i, j, res;
 
     for(i = 0; i < ncl; i++){
@@ -68,24 +74,30 @@ void solve(node *ptr, int nvar, int **cls, int ncl){
     }
 
     /* fim de calculos */
-
-    for(j=0; j<ptr->level; j++){
-        printf("     ");
+    if(DEBUG){
+        for(j=0; j<ptr->level; j++){
+            printf("     ");
+        }
+        printf("n: %d; Mc: %d; mc: %d\n", ptr->level, ptr->Mc, ptr->mc);
+        /*Ciclo para ver o valor das clausulas em cada iteraceo */
+        /*
+        printf("\n");
+        for(i = 0; i < ncl; i++){
+            printf("Clause #%d: %d\n", i+1, ptr->cls_evals[i]);
+        }
+        printf("\n");
+        */
     }
-    printf("n: %d; Mc: %d; mc: %d\n", ptr->level, ptr->Mc, ptr->mc);
 
-    /*Ciclo para ver o valor das clausulas em cada iteraceo */
-    /*
-    printf("\n");
-    for(i = 0; i < ncl; i++){
-        printf("Clause #%d: %d\n", i+1, ptr->cls_evals[i]);
-    }
-    printf("\n");
-    */
     /* fecundar duas posições de memoria e executar processo de adocao nos dois */
     if(ptr->Mc == ptr->mc){
-        /*printf("DONE\n");*/
-    }else if(ptr->level < nvar){
+        if(ptr->Mc == op->max){
+            op->nMax +=  pow(2, (nvar - ptr->level));
+        }else if(ptr->Mc > op->max){
+            op->max = ptr->Mc;
+            op->nMax =  pow(2, (nvar - ptr->level));
+        }
+    }else if(ptr->level < nvar && op->max <= ptr->Mc){
         ptr->l = create_node(ptr->Mc, ptr->mc, ptr->level+1, ncl, ptr);
         ptr->r = create_node(ptr->Mc, ptr->mc, ptr->level+1, ncl, ptr);
         for(i=0;i<ptr->level;i++){
@@ -94,8 +106,8 @@ void solve(node *ptr, int nvar, int **cls, int ncl){
         }
         ptr->l->vars[ptr->level] = -(ptr->level+1);
         ptr->r->vars[ptr->level] = ptr->level+1;
-        solve(ptr->l, nvar, cls, ncl);
-        solve(ptr->r, nvar, cls, ncl);
+        solve(ptr->l, nvar, cls, ncl, op);
+        solve(ptr->r, nvar, cls, ncl, op);
         delete_node(ptr->l);
         delete_node(ptr->r);
     }
@@ -113,9 +125,10 @@ int main(int argc, char *argv[]){
     char *p;
     int i, n;
     int nvar, ncl;
-    int **cls;
 
+    int **cls;
     node *btree;
+    output *op;
 
     if(argc != 2) exit(1);
 
@@ -135,7 +148,8 @@ int main(int argc, char *argv[]){
     }
     /* #variaveis, #clausulas */
     if(fgets(buf, 128, f_in)){
-        printf("%s", buf);
+        if(DEBUG)
+            printf("%s", buf);
         if((sscanf(buf, "%d %d", &nvar, &ncl)) != 2){
             fclose(f_out);
             fclose(f_in);
@@ -155,11 +169,13 @@ int main(int argc, char *argv[]){
         if(fgets(buf, 128, f_in)){
             p = strtok(buf, " \n");
             while(p){
-                printf("%2d ", atoi(p));
+                if(DEBUG)
+                    printf("%2d ", atoi(p));
                 cls[i][n++] = atoi(p);
                 p = strtok(NULL, " \n");
             }
-            printf("\n");
+            if(DEBUG)
+                printf("\n");
         }else{
             fclose(f_out);
             fclose(f_in);
@@ -169,8 +185,16 @@ int main(int argc, char *argv[]){
 
     btree = create_node(ncl, 0, 0, ncl, NULL);
 
-    solve(btree, nvar, cls, ncl);
+    op = (output*) malloc(sizeof(output));
+    op->path = (int*) malloc(nvar * sizeof(int));
+    op->max = -1;
+    op->nMax = 0;
 
+    solve(btree, nvar, cls, ncl, op);
+    printf("Max: %d; nMax: %d\n", op->max, op->nMax);
+
+    free(op->path);
+    free(op);
     delete_node(btree);
 
     for(i=0; i<ncl; i++){
