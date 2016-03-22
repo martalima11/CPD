@@ -3,6 +3,7 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <omp.h>
 
 #define max(A,B) ((A) >= (B)?(A):(B))
 #define min(A,B) ((A) <= (B)?(A):(B))
@@ -219,7 +220,10 @@ int main(int argc, char *argv[]){
 
     clock_gettime(CLOCK_REALTIME, &start);
 
-    solve(btree, nvar, cls, ncl, op);
+    #pragma omp parallel
+    {
+        solve(btree, nvar, cls, ncl, op);
+    }
 
     clock_gettime(CLOCK_REALTIME, &end);
     print_timediff(start, end);
