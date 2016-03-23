@@ -166,6 +166,8 @@ int main(int argc, char *argv[]){
 
     if(argc != 2) exit(1);
 
+    clock_gettime(CLOCK_REALTIME, &start);
+
     /*abertura de ficheitos*/
     ext = strrchr(argv[1], '.');
     if(!ext || strcmp(ext, ".in")) exit(1);
@@ -224,14 +226,9 @@ int main(int argc, char *argv[]){
     op->max = -1;
     op->nMax = 0;
 
-    clock_gettime(CLOCK_REALTIME, &start);
-
     #pragma omp parallel num_threads(4)
         #pragma omp single
             solve(btree, nvar, cls, ncl, op);
-
-    clock_gettime(CLOCK_REALTIME, &end);
-    print_timediff(start, end);
 
     fprintf(f_out, "%d %d\n", op->max, op->nMax);
     if(DEBUG)
@@ -256,6 +253,9 @@ int main(int argc, char *argv[]){
     free(cls);
     fclose(f_out);
     fclose(f_in);
+
+    clock_gettime(CLOCK_REALTIME, &end);
+    print_timediff(start, end);
 
     return 0;
 }

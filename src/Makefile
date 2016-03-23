@@ -1,8 +1,10 @@
 input := "ex1.in"
 logfile := "time.log"
 
+all: serial openmp
+
 serial: maxsat-serial.c
-	@gcc -o maxsat-serial maxsat-serial.c -Wall -lm
+	@gcc -o maxsat-serial maxsat-serial.c -Wall -lm -lrt
 
 serial_run: serial
 	@./maxsat-serial ./data/${input}
@@ -29,7 +31,7 @@ serial_all: serial
 	@echo "DONE thank you for your patience"
 
 openmp: maxsat-openmp.c
-	@gcc -o maxsat-openmp maxsat-openmp.c -Wall -lm -fopenmp
+	@gcc -o maxsat-openmp maxsat-openmp.c -Wall -lm -fopenmp -lrt
 
 openmp_run: openmp
 	@./maxsat-openmp ./data/${input}

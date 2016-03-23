@@ -27,6 +27,7 @@ void print_timediff(struct timespec start, struct timespec end){
     diff.tv_nsec = end.tv_nsec - start.tv_nsec + (end.tv_nsec < start.tv_nsec ? 1e9 : 0);
     diff.tv_sec = end.tv_sec - start.tv_sec - (end.tv_nsec < start.tv_nsec ? 1 : 0);
 
+    printf("%d\n", (int) diff.tv_nsec);
     printf("%02d:%02d.%09d\n", (int)(diff.tv_sec/60), (int)(diff.tv_sec%60), (int) diff.tv_nsec);
 
     return;
@@ -159,6 +160,8 @@ int main(int argc, char *argv[]){
 
     if(argc != 2) exit(1);
 
+    clock_gettime(CLOCK_REALTIME, &start);
+
     /*abertura de ficheitos*/
     ext = strrchr(argv[1], '.');
     if(!ext || strcmp(ext, ".in")) exit(1);
@@ -217,12 +220,7 @@ int main(int argc, char *argv[]){
     op->max = -1;
     op->nMax = 0;
 
-    clock_gettime(CLOCK_REALTIME, &start);
-
     solve(btree, nvar, cls, ncl, op);
-
-    clock_gettime(CLOCK_REALTIME, &end);
-    print_timediff(start, end);
 
     fprintf(f_out, "%d %d\n", op->max, op->nMax);
     if(DEBUG)
@@ -247,6 +245,9 @@ int main(int argc, char *argv[]){
     free(cls);
     fclose(f_out);
     fclose(f_in);
+
+    clock_gettime(CLOCK_REALTIME, &end);
+    print_timediff(start, end);
 
     return 0;
 }
