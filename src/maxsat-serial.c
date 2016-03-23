@@ -27,7 +27,7 @@ void print_timediff(struct timespec start, struct timespec end){
     diff.tv_nsec = end.tv_nsec - start.tv_nsec + (end.tv_nsec < start.tv_nsec ? 1e9 : 0);
     diff.tv_sec = end.tv_sec - start.tv_sec - (end.tv_nsec < start.tv_nsec ? 1 : 0);
 
-    printf("%d\n", (int) diff.tv_nsec);
+    printf("%d.%d\n", (int) diff.tv_sec, (int) diff.tv_nsec);
     printf("%02d:%02d.%09d\n", (int)(diff.tv_sec/60), (int)(diff.tv_sec%60), (int) diff.tv_nsec);
 
     return;
