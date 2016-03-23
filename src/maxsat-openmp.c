@@ -97,7 +97,6 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output *op){
             ptr->cls_evals[i] = 0;
         }
     }
-
     /* fim de calculos */
     if(DEBUG){
         for(j=0; j<ptr->level; j++){
@@ -132,8 +131,15 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output *op){
         }
         ptr->l->vars[ptr->level] = -(ptr->level+1);
         ptr->r->vars[ptr->level] = ptr->level+1;
+
+        #pragma omp task
         solve(ptr->l, nvar, cls, ncl, op);
+
+        #pragma omp task
         solve(ptr->r, nvar, cls, ncl, op);
+
+        #pragma omp taskwait
+
         delete_node(ptr->l);
         delete_node(ptr->r);
     }
@@ -220,10 +226,9 @@ int main(int argc, char *argv[]){
 
     clock_gettime(CLOCK_REALTIME, &start);
 
-    #pragma omp parallel
-    {
-        solve(btree, nvar, cls, ncl, op);
-    }
+    #pragma omp parallel num_threads(4)
+        #pragma omp single
+            solve(btree, nvar, cls, ncl, op);
 
     clock_gettime(CLOCK_REALTIME, &end);
     print_timediff(start, end);
