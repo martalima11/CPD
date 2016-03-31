@@ -17,27 +17,28 @@ benchmark: serial openmp
 	@echo "*** SERIAL ***"
 	
 	@for I in $(inputs); do \
-		echo $$I; \
-		for X in $$(seq 1 $(samples)); do \
-			echo "    $$T"; \
-			echo -n "$$I $$X -- " >> $(logfile); \
-			./maxsat-serial ./data/$$I >> $(logfile); \
-		done; \
-		echo >> $(logfile); \
+		echo -n "$$I "; \
+		echo -n "$$I -- " >> $(logfile); \
+		./maxsat-serial ./data/$$I >> $(logfile); \
+		echo "DONE."; \
 	done;
 	
+	@echo >> $(logfile)
 	@for T in $(threads); do \
 		echo "*** OpenMP $$T Threads ***" >> $(logfile); \
 		echo "*** OpenMP $$T Threads ***"; \
 		export OMP_NUM_THREADS=$$T; \
 		for I in $(inputs); do \
 			echo $$I; \
+			echo $$I >> $(logfile); \
 			for X in $$(seq 1 $(samples)); do \
-				echo -n "$$I $$X -- " >> $(logfile); \
+				echo -n "- $$X "; \
+				echo -n "- $$X - " >> $(logfile); \
 				./maxsat-openmp ./data/$$I >> $(logfile); \
+				echo "DONE."; \
 			done; \
-			echo >> $(logfile); \
 		done; \
+		echo >> $(logfile); \
 	done; 
 
 benchmark_serial: serial
@@ -50,10 +51,8 @@ benchmark_serial: serial
 	
 	@for I in $(inputs); do \
 		echo $$I; \
-		for X in $$(seq 1 $(samples)); do \
-			echo -n "$$I $$X -- " >> $(logfile); \
-			./maxsat-serial ./data/$$I >> $(logfile); \
-		done; \
+		echo -n "$$I -- " >> $(logfile); \
+		./maxsat-serial ./data/$$I >> $(logfile); \
 		echo >> $(logfile); \
 	done;
 
@@ -66,12 +65,15 @@ benchmark_openmp: openmp
 		export OMP_NUM_THREADS=$$T; \
 		for I in $(inputs); do \
 			echo $$I; \
+			echo $$I >> $(logfile); \
 			for X in $$(seq 1 $(samples)); do \
-				echo -n "$$I $$X -- " >> $(logfile); \
+				echo -n "- $$X - "; \
+				echo -n "- $$X - " >> $(logfile); \
 				./maxsat-openmp ./data/$$I >> $(logfile); \
+				echo "DONE."; \
 			done; \
-			echo >> $(logfile); \
 		done; \
+		echo >> $(logfile); \
 	done; 
 	
 serial: maxsat-serial.c
