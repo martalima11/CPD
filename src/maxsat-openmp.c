@@ -123,13 +123,16 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output *op){
 
     /* fecundar duas posições de memoria e executar processo de adocao nos dois */
     if(ptr->Mc == ptr->mc){
-        if(ptr->Mc == op->max){
-            op->nMax +=  pow(2, (nvar - ptr->level));
-        }else if(ptr->Mc > op->max){
-            op->max = ptr->Mc;
-            op->nMax = pow(2, (nvar - ptr->level));
-            set_path(op, ptr, nvar);
-        }
+	#pragma omp critical
+	{
+	    if(ptr->Mc == op->max){
+		op->nMax +=  pow(2, (nvar - ptr->level));
+	    }else if(ptr->Mc > op->max){
+		op->max = ptr->Mc;
+		op->nMax = pow(2, (nvar - ptr->level));
+		set_path(op, ptr, nvar);
+	    }
+	}
     }else if(ptr->level < nvar && op->max <= ptr->Mc){
         ptr->l = create_node(ptr->Mc, ptr->mc, ptr->level+1, ncl, ptr);
         ptr->r = create_node(ptr->Mc, ptr->mc, ptr->level+1, ncl, ptr);
@@ -142,8 +145,6 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output *op){
 
         #pragma omp task
         solve(ptr->l, nvar, cls, ncl, op);
-
-        #pragma omp task
         solve(ptr->r, nvar, cls, ncl, op);
 
         #pragma omp taskwait
@@ -165,7 +166,6 @@ int main(int argc, char *argv[]){
     char *p;
     int i, n;
     int nvar, ncl;
-    int thread_number;
     
     int **cls;
     node *btree;
@@ -173,15 +173,9 @@ int main(int argc, char *argv[]){
 
     double start, end;
 
-    if(argc < 2) exit(1);
+    if(argc != 2) exit(1);
 
     start = omp_get_wtime();
-
-    /* #threads */
-    if(argc == 3){
-        if((thread_number = atoi(argv[2])) < 1) exit(1);
-    }else
-        thread_number = 4;
 
     /*abertura de ficheitos*/
     ext = strrchr(argv[1], '.');
@@ -241,7 +235,7 @@ int main(int argc, char *argv[]){
     op->max = -1;
     op->nMax = 0;
 
-    #pragma omp parallel num_threads(thread_number)
+    #pragma omp parallel
         #pragma omp single
             solve(btree, nvar, cls, ncl, op);
 

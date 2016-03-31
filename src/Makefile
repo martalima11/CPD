@@ -2,7 +2,7 @@ input = ex1.in
 thread = 4
 
 inputs = ex1.in ex2.in ex3.in ex4.in ex5.in
-threads = 2 4 8 16 32 64
+threads = 2 4 8 16
 
 logfile = time.log
 samples = 10
@@ -28,11 +28,12 @@ benchmark: serial openmp
 	@for T in $(threads); do \
 		echo "*** OpenMP $$T Threads ***" >> $(logfile); \
 		echo "*** OpenMP $$T Threads ***"; \
+		set OMP_NUM_THREADS=$$T; \
 		for I in $(inputs); do \
 			echo $$I; \
 			for X in $$(seq 1 $(samples)); do \
 				echo -n "$$I $$X -- " >> $(logfile); \
-				./maxsat-openmp ./data/$$I $$T >> $(logfile); \
+				./maxsat-openmp ./data/$$I >> $(logfile); \
 			done; \
 			echo >> $(logfile); \
 		done; \
