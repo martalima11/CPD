@@ -19,6 +19,7 @@ benchmark: serial openmp
 	@for I in $(inputs); do \
 		echo $$I; \
 		for X in $$(seq 1 $(samples)); do \
+			echo "    $$T"; \
 			echo -n "$$I $$X -- " >> $(logfile); \
 			./maxsat-serial ./data/$$I >> $(logfile); \
 		done; \
@@ -28,7 +29,7 @@ benchmark: serial openmp
 	@for T in $(threads); do \
 		echo "*** OpenMP $$T Threads ***" >> $(logfile); \
 		echo "*** OpenMP $$T Threads ***"; \
-		set OMP_NUM_THREADS=$$T; \
+		export OMP_NUM_THREADS=$$T; \
 		for I in $(inputs); do \
 			echo $$I; \
 			for X in $$(seq 1 $(samples)); do \
@@ -39,8 +40,42 @@ benchmark: serial openmp
 		done; \
 	done; 
 
+benchmark_serial: serial
+	@rm -f $(logfile)
+	
+	@echo "Starting benchmark with $(samples) samples and saving on file $(logfile)"
+	
+	@echo "*** SERIAL ***" > $(logfile)
+	@echo "*** SERIAL ***"
+	
+	@for I in $(inputs); do \
+		echo $$I; \
+		for X in $$(seq 1 $(samples)); do \
+			echo -n "$$I $$X -- " >> $(logfile); \
+			./maxsat-serial ./data/$$I >> $(logfile); \
+		done; \
+		echo >> $(logfile); \
+	done;
+
+benchmark_openmp: openmp
+	@echo "Starting benchmark with $(samples) samples and saving on file $(logfile)"
+	
+	@for T in $(threads); do \
+		echo "*** OpenMP $$T Threads ***" >> $(logfile); \
+		echo "*** OpenMP $$T Threads ***"; \
+		export OMP_NUM_THREADS=$$T; \
+		for I in $(inputs); do \
+			echo $$I; \
+			for X in $$(seq 1 $(samples)); do \
+				echo -n "$$I $$X -- " >> $(logfile); \
+				./maxsat-openmp ./data/$$I >> $(logfile); \
+			done; \
+			echo >> $(logfile); \
+		done; \
+	done; 
+	
 serial: maxsat-serial.c
-	@gcc -o maxsat-serial maxsat-serial.c -Wall -lm -fopenmp 
+	gcc -o maxsat-serial maxsat-serial.c -Wall -lm -fopenmp 
 
 serial_run: serial
 	@./maxsat-serial ./data/$(input)
@@ -66,7 +101,7 @@ serial_all: serial
 	@echo "DONE thank you for your patience"
 
 openmp: maxsat-openmp.c
-	@gcc -o maxsat-openmp maxsat-openmp.c -Wall -lm -fopenmp 
+	gcc -o maxsat-openmp maxsat-openmp.c -Wall -lm -fopenmp 
 
 openmp_run: openmp
 	@./maxsat-openmp ./data/$(input)
