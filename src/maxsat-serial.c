@@ -2,7 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <time.h>
+#include <omp.h>
+
+/* Initially it was used the function clock_gettime(), but the teacher in
+ * charge advised the usage of of the function omp_get_wtime()
+ * 
+ * #include <time.h>
+*/
 
 #define max(A,B) ((A) >= (B)?(A):(B))
 #define min(A,B) ((A) <= (B)?(A):(B))
@@ -20,8 +26,9 @@ typedef struct node {
     int *vars, *cls_evals;
 } node;
 
+/* This function was used to format the output times. Not anymore.
+ * 
 void print_timediff(struct timespec start, struct timespec end){
-
     struct timespec diff;
 
     diff.tv_nsec = end.tv_nsec - start.tv_nsec + (end.tv_nsec < start.tv_nsec ? 1e9 : 0);
@@ -32,6 +39,7 @@ void print_timediff(struct timespec start, struct timespec end){
 
     return;
 }
+*/
 
 node *create_node(int Mc, int mc, int level, int ncl, node *father){
     node *new_node = (node*) malloc(sizeof(node));
@@ -104,14 +112,6 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output *op){
             printf("     ");
         }
         printf("n: %d; Mc: %d; mc: %d\n", ptr->level, ptr->Mc, ptr->mc);
-        /*Ciclo para ver o valor das clausulas em cada iteraceo */
-        /*
-        printf("\n");
-        for(i = 0; i < ncl; i++){
-            printf("Clause #%d: %d\n", i+1, ptr->cls_evals[i]);
-        }
-        printf("\n");
-        */
     }
 
     /* fecundar duas posições de memoria e executar processo de adocao nos dois */
@@ -156,11 +156,11 @@ int main(int argc, char *argv[]){
     node *btree;
     output *op;
 
-    struct timespec start, end;
+    double start, end;
 
     if(argc != 2) exit(1);
 
-    clock_gettime(CLOCK_REALTIME, &start);
+    start = omp_get_wtime();
 
     /*abertura de ficheitos*/
     ext = strrchr(argv[1], '.');
@@ -246,8 +246,8 @@ int main(int argc, char *argv[]){
     fclose(f_out);
     fclose(f_in);
 
-    clock_gettime(CLOCK_REALTIME, &end);
-    print_timediff(start, end);
+    end = omp_get_wtime();
+    printf("Elapsed time: %.09f\n", end-start);
 
     return 0;
 }

@@ -2,8 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <time.h>
 #include <omp.h>
+
+/* Initially it was used the function clock_gettime(), but the teacher in
+ * charge advised the usage of of the function omp_get_wtime()
+ * 
+ * #include <time.h>
+*/
 
 #define max(A,B) ((A) >= (B)?(A):(B))
 #define min(A,B) ((A) <= (B)?(A):(B))
@@ -21,18 +26,20 @@ typedef struct node {
     int *vars, *cls_evals;
 } node;
 
+/* This function was used to format the output times. Not anymore.
+ * 
 void print_timediff(struct timespec start, struct timespec end){
-
     struct timespec diff;
 
     diff.tv_nsec = end.tv_nsec - start.tv_nsec + (end.tv_nsec < start.tv_nsec ? 1e9 : 0);
     diff.tv_sec = end.tv_sec - start.tv_sec - (end.tv_nsec < start.tv_nsec ? 1 : 0);
 
-    printf("%d.%09d\n", (int) diff.tv_sec, (int) diff.tv_nsec);
+    printf("%d.%d\n", (int) diff.tv_sec, (int) diff.tv_nsec);
     printf("%02d:%02d.%09d\n", (int)(diff.tv_sec/60), (int)(diff.tv_sec%60), (int) diff.tv_nsec);
 
     return;
 }
+*/
 
 node *create_node(int Mc, int mc, int level, int ncl, node *father){
     node *new_node = (node*) malloc(sizeof(node));
@@ -116,13 +123,16 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output *op){
 
     /* fecundar duas posições de memoria e executar processo de adocao nos dois */
     if(ptr->Mc == ptr->mc){
-        if(ptr->Mc == op->max){
-            op->nMax +=  pow(2, (nvar - ptr->level));
-        }else if(ptr->Mc > op->max){
-            op->max = ptr->Mc;
-            op->nMax = pow(2, (nvar - ptr->level));
-            set_path(op, ptr, nvar);
-        }
+	#pragma omp critical
+	{
+	    if(ptr->Mc == op->max){
+		op->nMax +=  pow(2, (nvar - ptr->level));
+	    }else if(ptr->Mc > op->max){
+		op->max = ptr->Mc;
+		op->nMax = pow(2, (nvar - ptr->level));
+		set_path(op, ptr, nvar);
+	    }
+	}
     }else if(ptr->level < nvar && op->max <= ptr->Mc){
         ptr->l = create_node(ptr->Mc, ptr->mc, ptr->level+1, ncl, ptr);
         ptr->r = create_node(ptr->Mc, ptr->mc, ptr->level+1, ncl, ptr);
@@ -135,8 +145,6 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output *op){
 
         #pragma omp task
         solve(ptr->l, nvar, cls, ncl, op);
-
-        #pragma omp task
         solve(ptr->r, nvar, cls, ncl, op);
 
         #pragma omp taskwait
@@ -158,16 +166,16 @@ int main(int argc, char *argv[]){
     char *p;
     int i, n;
     int nvar, ncl;
-
+    
     int **cls;
     node *btree;
     output *op;
 
-    struct timespec start, end;
+    double start, end;
 
     if(argc != 2) exit(1);
 
-    clock_gettime(CLOCK_REALTIME, &start);
+    start = omp_get_wtime();
 
     /*abertura de ficheitos*/
     ext = strrchr(argv[1], '.');
@@ -227,7 +235,7 @@ int main(int argc, char *argv[]){
     op->max = -1;
     op->nMax = 0;
 
-    #pragma omp parallel num_threads(4)
+    #pragma omp parallel
         #pragma omp single
             solve(btree, nvar, cls, ncl, op);
 
@@ -255,8 +263,8 @@ int main(int argc, char *argv[]){
     fclose(f_out);
     fclose(f_in);
 
-    clock_gettime(CLOCK_REALTIME, &end);
-    print_timediff(start, end);
-
+    end = omp_get_wtime();
+	printf("Elapsed time: %.09f\n", end-start);
+	
     return 0;
 }
