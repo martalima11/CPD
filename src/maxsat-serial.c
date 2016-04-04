@@ -4,43 +4,25 @@
 #include <math.h>
 #include <omp.h>
 
-/* Initially it was used the function clock_gettime(), but the teacher in
- * charge advised the usage of of the function omp_get_wtime()
- * 
- * #include <time.h>
-*/
-
 #define max(A,B) ((A) >= (B)?(A):(B))
 #define min(A,B) ((A) <= (B)?(A):(B))
 #define DEBUG 0
 
+/* Data structure meant to store the global result */
 typedef struct output {
     int max;
     int nMax;
     int *path;
 } output;
 
+/* Data structure with all the variables needed on the recursive algorithm */
 typedef struct node {
     int level, Mc, mc;
     struct node *u, *l, *r;
     int *vars, *cls_evals;
 } node;
 
-/* This function was used to format the output times. Not anymore.
- * 
-void print_timediff(struct timespec start, struct timespec end){
-    struct timespec diff;
-
-    diff.tv_nsec = end.tv_nsec - start.tv_nsec + (end.tv_nsec < start.tv_nsec ? 1e9 : 0);
-    diff.tv_sec = end.tv_sec - start.tv_sec - (end.tv_nsec < start.tv_nsec ? 1 : 0);
-
-    printf("%d.%d\n", (int) diff.tv_sec, (int) diff.tv_nsec);
-    printf("%02d:%02d.%09d\n", (int)(diff.tv_sec/60), (int)(diff.tv_sec%60), (int) diff.tv_nsec);
-
-    return;
-}
-*/
-
+/* Function used to generate new (node *) instances */
 node *create_node(int Mc, int mc, int level, int ncl, node *father){
     node *new_node = (node*) malloc(sizeof(node));
     new_node -> level = level;
@@ -54,6 +36,7 @@ node *create_node(int Mc, int mc, int level, int ncl, node *father){
     return new_node;
 }
 
+/* Function used for memory clean-up */
 void delete_node(node *ptr){
     free(ptr->vars);
     free(ptr->cls_evals);
@@ -61,6 +44,7 @@ void delete_node(node *ptr){
     return;
 }
 
+/* Function used to generate possible results */
 void set_path(output *op, node *ptr, int len){
     int i;
     for(i=0; i<len; i++){
@@ -72,41 +56,53 @@ void set_path(output *op, node *ptr, int len){
     return;
 }
 
+/* Recursive function used to generate the intended results */
 void solve(node *ptr, int nvar, int **cls, int ncl, output *op){
     int i, j, res;
 
     for(i = 0; i < ncl; i++){
         if(ptr->level){
-            /* Inicializa a posicao com base no nó progenitor */
+            /* Initializes the position based on father node */
             ptr->cls_evals[i] = ptr->u->cls_evals[i];
-            /* So precisa de calcular se a clausula nao for ainda verdadeira nem falsa */
+
+            /* The clause only needs to be evaluated
+            in case there is still no veredict about it */
             if(!ptr->u->cls_evals[i]){
-                /* Compara variaveis das clausulas ate ao presente nivel */
-                for(j=0; cls[i][j] && abs(cls[i][j]) <= ptr->level; j++){
-                    /* calcula o resultado, da atribuicao de variavel, na clausula */
+
+                /* The clauses' variables are comparared
+                 up to the present level */
+                for(j = 0; cls[i][j] && abs(cls[i][j]) <= ptr->level; j++){
+
+                    /* The result of the variable atribuition
+                    is calculated, for the current clause */
                     res = cls[i][j] + ptr->vars[abs(cls[i][j])-1];
-                    /* se resultado for 0 quer dizer que os valores sao simetricos,
-                      caso contrario a clausula e verdadeira e nao vale a pena ver as outras variaveis*/
+
+                    /* If the result is 0, then the values are symmetric so
+                    there can be no conclusion (about this variable).
+                    Otherwise (res != 0), the clause can be evaluated as true
+                    and will no longer be evaluated. */
                     if(res){
                         ptr->cls_evals[i] = 1;
                         ptr->mc++;
                         break;
                     }
                 }
-                /* Se a clausula tiver sido lida ate ao fim e ainda assim nao for verdadeira,
-                   significa que ela e falsa */
+                /* If the clause has no more variables to be evaluated and
+                it still has no solution, then the clause is evaluated as false */
                 if(!cls[i][j] && !ptr->cls_evals[i]){
                     ptr->cls_evals[i] = -1;
                     ptr->Mc--;
                 }
             }
         }else{
-            /* Inicializa o promeiro no */
+            /* The first node is initialized */
             ptr->cls_evals[i] = 0;
         }
     }
 
-    /* fim de calculos */
+    /* After calculation on the current node */
+    /* For debug purposes, it's possible to know the
+    status for the current node */
     if(DEBUG){
         for(j=0; j<ptr->level; j++){
             printf("     ");
@@ -114,10 +110,12 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output *op){
         printf("n: %d; Mc: %d; mc: %d\n", ptr->level, ptr->Mc, ptr->mc);
     }
 
-    /* fecundar duas posições de memoria e executar processo de adocao nos dois */
+    /* Check if the best possible outcome was reached
+    If TRUE then there is no need to proceed further down the tree (pruning)
+    Else, create children nodes and corresponding information for both */
     if(ptr->Mc == ptr->mc){
         if(ptr->Mc == op->max){
-            op->nMax +=  pow(2, (nvar - ptr->level));
+            op->nMax += pow(2, (nvar - ptr->level));
         }else if(ptr->Mc > op->max){
             op->max = ptr->Mc;
             op->nMax = pow(2, (nvar - ptr->level));
@@ -126,20 +124,25 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output *op){
     }else if(ptr->level < nvar && op->max <= ptr->Mc){
         ptr->l = create_node(ptr->Mc, ptr->mc, ptr->level+1, ncl, ptr);
         ptr->r = create_node(ptr->Mc, ptr->mc, ptr->level+1, ncl, ptr);
-        for(i=0;i<ptr->level;i++){
+
+        for(i = 0; i < ptr->level; i++){
             ptr->l->vars[i] = ptr->vars[i];
             ptr->r->vars[i] = ptr->vars[i];
         }
-        ptr->l->vars[ptr->level] = -(ptr->level+1);
-        ptr->r->vars[ptr->level] = ptr->level+1;
+
+        ptr->l->vars[ptr->level] = -(ptr->level + 1);
+        ptr->r->vars[ptr->level] =  (ptr->level + 1);
+
         solve(ptr->l, nvar, cls, ncl, op);
         solve(ptr->r, nvar, cls, ncl, op);
+
         delete_node(ptr->l);
         delete_node(ptr->r);
     }
     return;
 }
 
+/* Main function */
 int main(int argc, char *argv[]){
     char * ext;
     char * out_file;
@@ -193,7 +196,7 @@ int main(int argc, char *argv[]){
 
     cls = (int**) malloc(ncl*sizeof(int*));
 
-    for(i=0; i<ncl; i++){
+    for(i = 0; i < ncl; i++){
         cls[i] = (int*) malloc((min(nvar, 20) + 1) * sizeof(int));
         n = 0;
         if(fgets(buf, 128, f_in)){
