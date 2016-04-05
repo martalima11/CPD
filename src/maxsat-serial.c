@@ -165,12 +165,12 @@ int main(int argc, char *argv[]){
 
     start = omp_get_wtime();
 
-    /*abertura de ficheitos*/
+    /* IO configuration */
     ext = strrchr(argv[1], '.');
     if(!ext || strcmp(ext, ".in")) exit(1);
     f_in = fopen(argv[1], "r");
     if(!f_in) exit(1);
-    out_file = (char*) malloc((strlen(argv[1])+2)*sizeof(char));
+    out_file = (char*) malloc((strlen(argv[1]) + 2) * sizeof(char));
     strcpy(ext, ".out");
     strcpy(out_file, argv[1]);
     f_out = fopen(out_file, "w");
@@ -179,7 +179,8 @@ int main(int argc, char *argv[]){
         fclose(f_in);
         exit(1);
     }
-    /* #variaveis, #clausulas */
+
+    /* Get #variables and #clauses */
     if(fgets(buf, 128, f_in)){
         if(DEBUG)
             printf("%s", buf);
@@ -194,8 +195,8 @@ int main(int argc, char *argv[]){
         exit(1);
     }
 
+    /* Data structure initialization */
     cls = (int**) malloc(ncl*sizeof(int*));
-
     for(i = 0; i < ncl; i++){
         cls[i] = (int*) malloc((min(nvar, 20) + 1) * sizeof(int));
         n = 0;
@@ -223,6 +224,7 @@ int main(int argc, char *argv[]){
     op->max = -1;
     op->nMax = 0;
 
+    /* Main algorithm */
     solve(btree, nvar, cls, ncl, op);
 
     fprintf(f_out, "%d %d\n", op->max, op->nMax);
@@ -237,6 +239,7 @@ int main(int argc, char *argv[]){
     if(DEBUG)
         printf("\n");
 
+    /* Memory clean-up */
     free(op->path);
     free(op);
     delete_node(btree);
