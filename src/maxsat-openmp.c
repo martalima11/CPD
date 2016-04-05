@@ -1,60 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
 #include <omp.h>
+#include "maxsat.h"
 
-#define max(A,B) ((A) >= (B)?(A):(B))
-#define min(A,B) ((A) <= (B)?(A):(B))
 #define DEBUG 0
-
-/* Data structure meant to store the global result */
-typedef struct output {
-    int max;
-    int nMax;
-    int *path;
-} output;
-
-/* Data structure with all the variables needed on the recursive algorithm */
-typedef struct node {
-    int level, Mc, mc;
-    struct node *u, *l, *r;
-    int *vars, *cls_evals;
-} node;
-
-/* Function used to generate new (node *) instances */
-node *create_node(int Mc, int mc, int level, int ncl, node *father){
-    node *new_node = (node*) malloc(sizeof(node));
-    new_node -> level = level;
-    new_node -> Mc = Mc;
-    new_node -> mc = mc;
-    new_node -> u = father;
-    new_node -> l = NULL;
-    new_node -> r = NULL;
-    new_node -> vars = (int*) malloc(level * sizeof(int));
-    new_node -> cls_evals = (int*) malloc(ncl * sizeof(int));
-    return new_node;
-}
-
-/* Function used for memory clean-up */
-void delete_node(node *ptr){
-    free(ptr->vars);
-    free(ptr->cls_evals);
-    free(ptr);
-    return;
-}
-
-/* Function used to generate possible results */
-void set_path(output *op, node *ptr, int len){
-    int i;
-    for(i=0; i<len; i++){
-        if(i < ptr->level)
-            op->path[i] = ptr->vars[i];
-        else
-            op->path[i] = i + 1;
-    }
-    return;
-}
 
 /* Recursive function used to generate the intended results */
 void solve(node *ptr, int nvar, int **cls, int ncl, output *op){
@@ -264,7 +211,7 @@ int main(int argc, char *argv[]){
     fclose(f_in);
 
     end = omp_get_wtime();
-	printf("Elapsed time: %.09f\n", end-start);
+    printf("Elapsed time: %.09f\n", end-start);
 
     return 0;
 }
