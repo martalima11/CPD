@@ -4,102 +4,102 @@ thread = 4
 inputs = ex1.in ex2.in ex3.in ex4.in ex5.in
 threads = 2 4 8 16
 
+logdir = ./data/log
 logfile = time.log
 samples = 10
 
+benchmark: serial openmp
+	@echo "Starting benchmark with $(samples) samples and saving on file $(logdir)/$(logfile)"
 
-benchmark: serial openmp	
-	@echo "Starting benchmark with $(samples) samples and saving on file $(logfile)"
-	
-	@echo "*** SERIAL ***" > $(logfile)
+	@echo "*** SERIAL ***" > $(logdir)/$(logfile)
 	@echo "*** SERIAL ***"
-	
+
 	@for I in $(inputs); do \
 		echo -n "$$I "; \
-		echo -n "$$I -- " >> $(logfile); \
-		./maxsat-serial ./data/$$I >> $(logfile); \
+		echo -n "$$I -- " >> $(logdir)/$(logfile); \
+		./maxsat-serial ./data/$$I >> $(logdir)/$(logfile); \
 		echo "DONE."; \
 	done;
-	
-	@echo >> $(logfile)
+
+	@echo >> $(logdir)/$(logfile)
 	@for T in $(threads); do \
-		echo "*** OpenMP $$T Threads ***" >> $(logfile); \
+		echo "*** OpenMP $$T Threads ***" >> $(logdir)/$(logfile); \
 		echo "*** OpenMP $$T Threads ***"; \
 		export OMP_NUM_THREADS=$$T; \
 		for I in $(inputs); do \
 			echo $$I; \
-			echo $$I >> $(logfile); \
+			echo $$I >> $(logdir)/$(logfile); \
 			for X in $$(seq 1 $(samples)); do \
 				echo -n "- $$X "; \
-				echo -n "- $$X - " >> $(logfile); \
-				./maxsat-openmp ./data/$$I >> $(logfile); \
+				echo -n "- $$X - " >> $(logdir)/$(logfile); \
+				./maxsat-openmp ./data/$$I >> $(logdir)/$(logfile); \
 				echo "DONE."; \
 			done; \
 		done; \
-		echo >> $(logfile); \
-	done; 
+		echo >> $(logdir)/$(logfile); \
+	done;
 
 benchmark_serial: serial
-	@echo "Starting benchmark with $(samples) samples and saving on file $(logfile)"
-	
-	@echo "*** SERIAL ***" > $(logfile)
+	@echo "Starting benchmark with $(samples) samples and saving on file $(logdir)/$(logfile)"
+
+	@echo "*** SERIAL ***" > $(logdir)/$(logfile)
 	@echo "*** SERIAL ***"
-	
+
 	@for I in $(inputs); do \
 		echo $$I; \
-		echo -n "$$I -- " >> $(logfile); \
-		./maxsat-serial ./data/$$I >> $(logfile); \
-		echo >> $(logfile); \
+		echo -n "$$I -- " >> $(logdir)/$(logfile); \
+		./maxsat-serial ./data/$$I >> $(logdir)/$(logfile); \
+		echo >> $(logdir)/$(logfile); \
 	done;
 
 benchmark_openmp: openmp
-	@echo "Starting benchmark with $(samples) samples and saving on file $(logfile)"
-	
+	@echo "Starting benchmark with $(samples) samples and saving on file $(logdir)/$(logfile)"
+
 	@for T in $(threads); do \
-		echo "*** OpenMP $$T Threads ***" > $(logfile); \
+		echo "*** OpenMP $$T Threads ***" > $(logdir)/$(logfile); \
 		echo "*** OpenMP $$T Threads ***"; \
 		export OMP_NUM_THREADS=$$T; \
 		for I in $(inputs); do \
 			echo $$I; \
-			echo $$I >> $(logfile); \
+			echo $$I >> $(logdir)/$(logfile); \
 			for X in $$(seq 1 $(samples)); do \
 				echo -n "- $$X - "; \
-				echo -n "- $$X - " >> $(logfile); \
-				./maxsat-openmp ./data/$$I >> $(logfile); \
+				echo -n "- $$X - " >> $(logdir)/$(logfile); \
+				./maxsat-openmp ./data/$$I >> $(logdir)/$(logfile); \
 				echo "DONE."; \
 			done; \
 		done; \
-		echo >> $(logfile); \
-	done; 
-	
+		echo >> $(logdir)/$(logfile); \
+	done;
+
 serial: maxsat-serial.c maxsat.o
-	gcc -o maxsat-serial maxsat-serial.c maxsat.o -Wall -lm -fopenmp 
+	gcc -o maxsat-serial maxsat-serial.c maxsat.o -Wall -lm -fopenmp
 
 serial_run: serial
 	@./maxsat-serial ./data/$(input)
 
 serial_log: serial
-	@echo -n "$(input) -- " > $(logfile)
-	@./maxsat-serial ./data/$(input) >> $(logfile)
+	@echo -n "$(input) -- " > $(logdir)/$(logfile)
+	@./maxsat-serial ./data/$(input) >> $(logdir)/$(logfile)
 
 serial_val: serial
-	@echo -n "ex1.in - " > $(logfile)
+	@echo -n "$(input) - " > $(logdir)/$(logfile)
 	@valgrind --track-origins=yes --leak-check=full ./maxsat-serial ./data/$(input)
 
 serial_all: serial
-	@rm -f $(logfile)
-	@touch $(logfile)
-	
+	@rm -f $(logdir)/$(logfile)
+	@touch $(logdir)/$(logfile)
+
 	@for I in $(inputs); do \
 	echo $$I; \
-	echo -n "$$I -- " >> $(logfile); \
-	./maxsat-serial ./data/$$I >> $(logfile); \
+	echo -n "$$I -- " >> $(logdir)/$(logfile); \
+	./maxsat-serial ./data/$$I >> $(logdir)/$(logfile); \
 	done;
-	
+
 	@echo "DONE thank you for your patience"
 
 openmp: maxsat-openmp.c maxsat.o
-	gcc -o maxsat-openmp maxsat-openmp.c maxsat.o -Wall -lm -fopenmp 
+	gcc -o maxsat-openmp maxsat-openmp.c maxsat.o -Wall -lm -fopenmp
 
 openmp_run: openmp
 	@./maxsat-openmp ./data/$(input)
@@ -108,22 +108,22 @@ openmp_run_thread: openmp
 	@./maxsat-openmp ./data/$(input) $(thread)
 
 openmp_log: openmp
-	@echo -n "$(input) -- " > $(logfile)
-	@./maxsat-openmp ./data/$(input) >> $(logfile)
+	@echo -n "$(input) -- " > $(logdir)/$(logfile)
+	@./maxsat-openmp ./data/$(input) >> $(logdir)/$(logfile)
 
 openmp_val: openmp
 	@valgrind -v --tool=helgrind ./maxsat-openmp ./data/$(input)
 
 openmp_all: openmp
-	@rm -f $(logfile)
-	@touch $(logfile)
-	
+	@rm -f $(logdir)/$(logfile)
+	@touch $(logdir)/$(logfile)
+
 	@for I in $(inputs); do \
 	echo $$I; \
-	echo -n "$$I -- " >> $(logfile); \
-	./maxsat-openmp ./data/$$I >> $(logfile); \
+	echo -n "$$I -- " >> $(logdir)/$(logfile); \
+	./maxsat-openmp ./data/$$I >> $(logdir)/$(logfile); \
 	done;
-	
+
 	@echo "DONE thank you for your patience"
 
 maxsat.o: maxsat.c maxsat.h
@@ -135,4 +135,3 @@ clean:
 	@rm -f maxsat-serial
 	@rm -f data/*.out
 	@echo "Done!"
-	
