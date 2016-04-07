@@ -86,11 +86,16 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output *op){
         ptr->l->vars[ptr->level] = -(ptr->level+1);
         ptr->r->vars[ptr->level] = ptr->level+1;
 
-        #pragma omp task
-            solve(ptr->l, nvar, cls, ncl, op);
-        solve(ptr->r, nvar, cls, ncl, op);
+        if(ptr->level < 3){
+            #pragma omp task
+                solve(ptr->l, nvar, cls, ncl, op);
+            solve(ptr->r, nvar, cls, ncl, op);
 
-        #pragma omp taskwait
+            #pragma omp taskwait
+        }else{
+            solve(ptr->l, nvar, cls, ncl, op);
+            solve(ptr->r, nvar, cls, ncl, op);
+        }
 
         delete_node(ptr->l);
         delete_node(ptr->r);

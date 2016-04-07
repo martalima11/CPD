@@ -121,7 +121,7 @@ openmp_all: openmp
 	@for I in $(inputs); do \
 	echo $$I; \
 	echo -n "$$I -- " >> $(logfile); \
-	./maxsat-openmp ./data/$(input) >> $(logfile) \
+	./maxsat-openmp ./data/$$I >> $(logfile); \
 	done;
 	
 	@echo "DONE thank you for your patience"
