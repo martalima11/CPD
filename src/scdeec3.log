@@ -1,0 +1,235 @@
+*** SERIAL ***
+ex1.in -- Elapsed time: 0.008841332
+ex2.in -- Elapsed time: 0.010380257
+ex3.in -- Elapsed time: 18.554410325
+ex4.in -- Elapsed time: 170.487390414
+ex5.in -- Elapsed time: 319.898444349
+
+*** OpenMP 2 Threads ***
+ex1.in
+- 1 - Elapsed time: 0.002830188
+- 2 - Elapsed time: 0.002950191
+- 3 - Elapsed time: 0.002865540
+- 4 - Elapsed time: 0.003371860
+- 5 - Elapsed time: 0.003394888
+- 6 - Elapsed time: 0.003155491
+- 7 - Elapsed time: 0.003841736
+- 8 - Elapsed time: 0.003218376
+- 9 - Elapsed time: 0.002846271
+- 10 - Elapsed time: 0.003056472
+ex2.in
+- 1 - Elapsed time: 0.006103601
+- 2 - Elapsed time: 0.006166442
+- 3 - Elapsed time: 0.006294708
+- 4 - Elapsed time: 0.006070871
+- 5 - Elapsed time: 0.006155561
+- 6 - Elapsed time: 0.006414475
+- 7 - Elapsed time: 0.006244682
+- 8 - Elapsed time: 0.006152959
+- 9 - Elapsed time: 0.006120200
+- 10 - Elapsed time: 0.006296347
+ex3.in
+- 1 - Elapsed time: 12.268599865
+- 2 - Elapsed time: 12.252852110
+- 3 - Elapsed time: 12.258714982
+- 4 - Elapsed time: 12.273113055
+- 5 - Elapsed time: 12.264494414
+- 6 - Elapsed time: 12.250476654
+- 7 - Elapsed time: 12.255550706
+- 8 - Elapsed time: 12.254376971
+- 9 - Elapsed time: 12.259642780
+- 10 - Elapsed time: 12.256508008
+ex4.in
+- 1 - Elapsed time: 177.649856611
+- 2 - Elapsed time: 178.652472495
+- 3 - Elapsed time: 177.802423907
+- 4 - Elapsed time: 177.802983345
+- 5 - Elapsed time: 177.725773683
+- 6 - Elapsed time: 177.810694317
+- 7 - Elapsed time: 177.743655299
+- 8 - Elapsed time: 177.968677112
+- 9 - Elapsed time: 177.716603104
+- 10 - Elapsed time: 177.671881723
+ex5.in
+- 1 - Elapsed time: 151.181004432
+- 2 - Elapsed time: 151.106848053
+- 3 - Elapsed time: 151.199310126
+- 4 - Elapsed time: 151.538358021
+- 5 - Elapsed time: 151.098890209
+- 6 - Elapsed time: 151.226510682
+- 7 - Elapsed time: 151.168012526
+- 8 - Elapsed time: 151.906726372
+- 9 - Elapsed time: 151.171640132
+- 10 - Elapsed time: 151.184463438
+
+*** OpenMP 4 Threads ***
+ex1.in
+- 1 - Elapsed time: 0.008869692
+- 2 - Elapsed time: 0.003303759
+- 3 - Elapsed time: 0.010169339
+- 4 - Elapsed time: 0.003363292
+- 5 - Elapsed time: 0.014297088
+- 6 - Elapsed time: 0.002838719
+- 7 - Elapsed time: 0.004296059
+- 8 - Elapsed time: 0.003241019
+- 9 - Elapsed time: 0.003829043
+- 10 - Elapsed time: 0.009624597
+ex2.in
+- 1 - Elapsed time: 0.011613561
+- 2 - Elapsed time: 0.005731932
+- 3 - Elapsed time: 0.011712575
+- 4 - Elapsed time: 0.005910210
+- 5 - Elapsed time: 0.012491233
+- 6 - Elapsed time: 0.003512261
+- 7 - Elapsed time: 0.003826358
+- 8 - Elapsed time: 0.003385815
+- 9 - Elapsed time: 0.011726024
+- 10 - Elapsed time: 0.003724552
+ex3.in
+- 1 - Elapsed time: 7.431638595
+- 2 - Elapsed time: 5.330661978
+- 3 - Elapsed time: 5.334986351
+- 4 - Elapsed time: 7.422991239
+- 5 - Elapsed time: 7.420841327
+- 6 - Elapsed time: 5.989287261
+- 7 - Elapsed time: 7.436386904
+- 8 - Elapsed time: 7.423455454
+- 9 - Elapsed time: 7.429932566
+- 10 - Elapsed time: 7.426062188
+ex4.in
+- 1 - Elapsed time: 84.526970693
+- 2 - Elapsed time: 81.547059308
+- 3 - Elapsed time: 84.521131326
+- 4 - Elapsed time: 81.539139067
+- 5 - Elapsed time: 64.230898207
+- 6 - Elapsed time: 81.480487081
+- 7 - Elapsed time: 64.217732360
+- 8 - Elapsed time: 84.471630231
+- 9 - Elapsed time: 64.250825995
+- 10 - Elapsed time: 84.503044665
+ex5.in
+- 1 - Elapsed time: 93.634332626
+- 2 - Elapsed time: 93.785596890
+- 3 - Elapsed time: 93.635955890
+- 4 - Elapsed time: 93.762978576
+- 5 - Elapsed time: 93.802287134
+- 6 - Elapsed time: 93.567644832
+- 7 - Elapsed time: 93.817179526
+- 8 - Elapsed time: 93.613222726
+- 9 - Elapsed time: 93.819989036
+- 10 - Elapsed time: 93.613219903
+
+*** OpenMP 8 Threads ***
+ex1.in
+- 1 - Elapsed time: 0.003081202
+- 2 - Elapsed time: 0.003073139
+- 3 - Elapsed time: 0.003102406
+- 4 - Elapsed time: 0.003701427
+- 5 - Elapsed time: 0.003709987
+- 6 - Elapsed time: 0.003593101
+- 7 - Elapsed time: 0.003777207
+- 8 - Elapsed time: 0.003705928
+- 9 - Elapsed time: 0.003908519
+- 10 - Elapsed time: 0.003774065
+ex2.in
+- 1 - Elapsed time: 0.006436674
+- 2 - Elapsed time: 0.006410749
+- 3 - Elapsed time: 0.005916666
+- 4 - Elapsed time: 0.006299785
+- 5 - Elapsed time: 0.006195721
+- 6 - Elapsed time: 0.006040252
+- 7 - Elapsed time: 0.007047660
+- 8 - Elapsed time: 0.006343584
+- 9 - Elapsed time: 0.005929466
+- 10 - Elapsed time: 0.006522188
+ex3.in
+- 1 - Elapsed time: 5.200471781
+- 2 - Elapsed time: 5.501899893
+- 3 - Elapsed time: 5.999169979
+- 4 - Elapsed time: 6.047559618
+- 5 - Elapsed time: 5.815180104
+- 6 - Elapsed time: 5.318426773
+- 7 - Elapsed time: 4.649956638
+- 8 - Elapsed time: 5.851310260
+- 9 - Elapsed time: 5.619780579
+- 10 - Elapsed time: 4.706539667
+ex4.in
+- 1 - Elapsed time: 63.074917194
+- 2 - Elapsed time: 70.808601010
+- 3 - Elapsed time: 72.086126976
+- 4 - Elapsed time: 69.416636503
+- 5 - Elapsed time: 69.354617695
+- 6 - Elapsed time: 56.262786883
+- 7 - Elapsed time: 69.315128719
+- 8 - Elapsed time: 73.165188279
+- 9 - Elapsed time: 56.716284598
+- 10 - Elapsed time: 69.770925146
+ex5.in
+- 1 - Elapsed time: 82.371007134
+- 2 - Elapsed time: 80.324755741
+- 3 - Elapsed time: 82.991843600
+- 4 - Elapsed time: 82.864103890
+- 5 - Elapsed time: 80.423326280
+- 6 - Elapsed time: 82.491174472
+- 7 - Elapsed time: 80.567269717
+- 8 - Elapsed time: 80.229298003
+- 9 - Elapsed time: 80.883790251
+- 10 - Elapsed time: 80.765372079
+
+*** OpenMP 16 Threads ***
+ex1.in
+- 1 - Elapsed time: 0.004597862
+- 2 - Elapsed time: 0.005297032
+- 3 - Elapsed time: 0.004179440
+- 4 - Elapsed time: 0.004251837
+- 5 - Elapsed time: 0.004135128
+- 6 - Elapsed time: 0.004224665
+- 7 - Elapsed time: 0.005420506
+- 8 - Elapsed time: 0.004045672
+- 9 - Elapsed time: 0.004139104
+- 10 - Elapsed time: 0.004070700
+ex2.in
+- 1 - Elapsed time: 0.007024245
+- 2 - Elapsed time: 0.006356673
+- 3 - Elapsed time: 0.006764219
+- 4 - Elapsed time: 0.006776853
+- 5 - Elapsed time: 0.007907474
+- 6 - Elapsed time: 0.008377379
+- 7 - Elapsed time: 0.007097879
+- 8 - Elapsed time: 0.007514943
+- 9 - Elapsed time: 0.006759634
+- 10 - Elapsed time: 0.006977842
+ex3.in
+- 1 - Elapsed time: 4.741117323
+- 2 - Elapsed time: 4.716597564
+- 3 - Elapsed time: 4.691207596
+- 4 - Elapsed time: 4.738696693
+- 5 - Elapsed time: 4.833969634
+- 6 - Elapsed time: 4.886828974
+- 7 - Elapsed time: 4.748110624
+- 8 - Elapsed time: 4.754277434
+- 9 - Elapsed time: 4.744045050
+- 10 - Elapsed time: 4.787886059
+ex4.in
+- 1 - Elapsed time: 71.804533089
+- 2 - Elapsed time: 65.305652102
+- 3 - Elapsed time: 73.921245656
+- 4 - Elapsed time: 54.302897573
+- 5 - Elapsed time: 73.925146114
+- 6 - Elapsed time: 77.569576289
+- 7 - Elapsed time: 62.951135973
+- 8 - Elapsed time: 52.648163634
+- 9 - Elapsed time: 53.836541725
+- 10 - Elapsed time: 53.678561583
+ex5.in
+- 1 - Elapsed time: 84.087494555
+- 2 - Elapsed time: 85.051141055
+- 3 - Elapsed time: 82.751785723
+- 4 - Elapsed time: 85.247181684
+- 5 - Elapsed time: 84.082952227
+- 6 - Elapsed time: 85.126624051
+- 7 - Elapsed time: 84.776241708
+- 8 - Elapsed time: 86.720452853
+- 9 - Elapsed time: 83.409077412
+- 10 - Elapsed time: 84.668655728
+
