@@ -55,10 +55,11 @@ benchmark_serial: serial
 	done;
 
 benchmark_openmp: openmp
+	@rm -f $(logdir)/$(logfile)
 	@echo "Starting benchmark with $(samples) samples and saving on file $(logdir)/$(logfile)"
 
 	@for T in $(threads); do \
-		echo "*** OpenMP $$T Threads ***" > $(logdir)/$(logfile); \
+		echo "*** OpenMP $$T Threads ***" >> $(logdir)/$(logfile); \
 		echo "*** OpenMP $$T Threads ***"; \
 		export OMP_NUM_THREADS=$$T; \
 		for I in $(inputs); do \
