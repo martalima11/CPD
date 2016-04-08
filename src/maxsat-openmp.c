@@ -2,6 +2,7 @@
 #include "maxsat.h"
 
 #define DEBUG 0
+#define LEVEL_LIMIT 4
 
 /* Recursive function used to generate the intended results */
 void solve(node *ptr, int nvar, int **cls, int ncl, output *op){
@@ -86,7 +87,7 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output *op){
         ptr->l->vars[ptr->level] = -(ptr->level+1);
         ptr->r->vars[ptr->level] = ptr->level+1;
 
-        if(ptr->level < 3){
+        if(ptr->level < LEVEL_LIMIT){
             #pragma omp task
                 solve(ptr->l, nvar, cls, ncl, op);
             solve(ptr->r, nvar, cls, ncl, op);

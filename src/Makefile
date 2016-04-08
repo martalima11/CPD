@@ -2,12 +2,14 @@ input = ex1.in
 thread = 4
 
 inputs = ex1.in ex2.in ex3.in ex4.in ex5.in
-threads = 2 4 8 16
+threads = 2 4 8
 
-logdir = ./data/log
+logdir = ./data/logs
 logfile = time.log
-samples = 10
+samples = 5
 
+all: serial openmp
+	
 benchmark: serial openmp
 	@echo "Starting benchmark with $(samples) samples and saving on file $(logdir)/$(logfile)"
 
