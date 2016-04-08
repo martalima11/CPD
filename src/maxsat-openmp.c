@@ -2,7 +2,7 @@
 #include "maxsat.h"
 
 #define DEBUG 0
-#define LEVEL_LIMIT 3
+#define LEVEL_LIMIT 5
 
 /* Recursive function used to generate the intended results */
 void solve(node *ptr, int nvar, int **cls, int ncl, output *op){

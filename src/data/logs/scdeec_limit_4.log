@@ -1,0 +1,66 @@
+*** OpenMP 2 Threads ***
+ex1.in
+- 1 - Elapsed time: 0.004449844
+- 2 - Elapsed time: 0.003806935
+- 3 - Elapsed time: 0.003853818
+ex2.in
+- 1 - Elapsed time: 0.008032552
+- 2 - Elapsed time: 0.007560725
+- 3 - Elapsed time: 0.007508381
+ex3.in
+- 1 - Elapsed time: 25.250310808
+- 2 - Elapsed time: 25.231203241
+- 3 - Elapsed time: 25.262824055
+ex4.in
+- 1 - Elapsed time: 386.584676999
+- 2 - Elapsed time: 386.590780314
+- 3 - Elapsed time: 385.337272261
+ex5.in
+- 1 - Elapsed time: 375.096204517
+- 2 - Elapsed time: 376.972922824
+- 3 - Elapsed time: 375.558761420
+
+*** OpenMP 4 Threads ***
+ex1.in
+- 1 - Elapsed time: 0.004385354
+- 2 - Elapsed time: 0.003842308
+- 3 - Elapsed time: 0.004036545
+ex2.in
+- 1 - Elapsed time: 0.007190347
+- 2 - Elapsed time: 0.006512201
+- 3 - Elapsed time: 0.006607901
+ex3.in
+- 1 - Elapsed time: 14.497535809
+- 2 - Elapsed time: 14.539249468
+- 3 - Elapsed time: 14.505306747
+ex4.in
+- 1 - Elapsed time: 180.468298287
+- 2 - Elapsed time: 180.553183298
+- 3 - Elapsed time: 180.799664312
+ex5.in
+- 1 - Elapsed time: 224.909848901
+- 2 - Elapsed time: 224.075888017
+- 3 - Elapsed time: 224.274246352
+
+*** OpenMP 8 Threads ***
+ex1.in
+- 1 - Elapsed time: 0.004691843
+- 2 - Elapsed time: 0.004361837
+- 3 - Elapsed time: 0.004442016
+ex2.in
+- 1 - Elapsed time: 0.006921938
+- 2 - Elapsed time: 0.006977741
+- 3 - Elapsed time: 0.007297916
+ex3.in
+- 1 - Elapsed time: 10.315372263
+- 2 - Elapsed time: 10.448751497
+- 3 - Elapsed time: 10.462436568
+ex4.in
+- 1 - Elapsed time: 114.110115078
+- 2 - Elapsed time: 114.667501846
+- 3 - Elapsed time: 115.504133221
+ex5.in
+- 1 - Elapsed time: 200.890930754
+- 2 - Elapsed time: 180.218243449
+- 3 - Elapsed time: 185.740980603
+
