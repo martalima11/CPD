@@ -6,7 +6,7 @@ threads = 2 4 8
 
 logdir = ./data/logs
 logfile = time.log
-samples = 5
+samples = 3
 
 all: serial openmp
 	
