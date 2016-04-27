@@ -1,12 +1,14 @@
 #include <omp.h>
+#include <mpi.h>
+
 #include "maxsat.h"
 
 #define DEBUG 0
-#define LEVEL_LIMIT 5
 
 /* Recursive function used to generate the intended results */
-void solve(node *ptr, int nvar, int **cls, int ncl, output *op){
+void travel(node *ptr, int nvar, int **cls, int ncl, output *op){
     int i, j, res;
+    
 
     for(i = 0; i < ncl; i++){
         if(ptr->level){
@@ -23,6 +25,7 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output *op){
 
                     /* The result of the variable atribuition
                     is calculated, for the current clause */
+                    
                     res = cls[i][j] + ptr->vars[abs(cls[i][j])-1];
 
                     /* If the result is 0, then the values are symmetric so
@@ -58,23 +61,17 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output *op){
         printf("n: %d; Mc: %d; mc: %d\n", ptr->level, ptr->Mc, ptr->mc);
     }
 
-
     /* Check if the best possible outcome was reached
     If TRUE then there is no need to proceed further down the tree (pruning)
     Else, create children nodes and corresponding information for both */
     if(ptr->Mc == ptr->mc){
-        /* When checking for possible global maximum,
-        the program must maintain coherence, hence this pragma  */
-    	#pragma omp critical
-    	{
-    	    if(ptr->Mc == op->max){
-                op->nMax +=  pow(2, (nvar - ptr->level));
-    	    }else if(ptr->Mc > op->max){
-    		    op->max = ptr->Mc;
-    		    op->nMax = pow(2, (nvar - ptr->level));
-    		    set_path(op, ptr, nvar);
-    	    }
-    	}
+        if(ptr->Mc == op->max){
+            op->nMax += pow(2, (nvar - ptr->level));
+        }else if(ptr->Mc > op->max){
+            op->max = ptr->Mc;
+            op->nMax = pow(2, (nvar - ptr->level));
+            set_path(op, ptr, nvar);
+        }
     }else if(ptr->level < nvar && op->max <= ptr->Mc){
         ptr->l = create_node(ptr->Mc, ptr->mc, ptr->level+1, ncl, ptr);
         ptr->r = create_node(ptr->Mc, ptr->mc, ptr->level+1, ncl, ptr);
@@ -84,19 +81,11 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output *op){
             ptr->r->vars[i] = ptr->vars[i];
         }
 
-        ptr->l->vars[ptr->level] = -(ptr->level+1);
-        ptr->r->vars[ptr->level] = ptr->level+1;
+        ptr->l->vars[ptr->level] = -(ptr->level + 1);
+        ptr->r->vars[ptr->level] =  (ptr->level + 1);
 
-       if(ptr->level < LEVEL_LIMIT){
-        #pragma omp task
-            solve(ptr->l, nvar, cls, ncl, op);
-        solve(ptr->r, nvar, cls, ncl, op);
-
-        #pragma omp taskwait
-        }else{
-            solve(ptr->l, nvar, cls, ncl, op);
-            solve(ptr->r, nvar, cls, ncl, op);
-        }
+        travel(ptr->l, nvar, cls, ncl, op);
+        travel(ptr->r, nvar, cls, ncl, op);
 
         delete_node(ptr->l);
         delete_node(ptr->r);
@@ -108,10 +97,10 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output *op){
 int main(int argc, char *argv[]){
     char * ext;
     char * out_file;
-
+    
     FILE * f_in = NULL;
     FILE * f_out = NULL;
-
+    
     char buf[128];
     char *p;
     int i, n;
@@ -120,46 +109,72 @@ int main(int argc, char *argv[]){
     int **cls;
     node *btree;
     output *op;
+    
+    int id, proc;
+    int data_size[2];
 
     double start, end;
 
     if(argc != 2) exit(1);
 
-    start = omp_get_wtime();
+	/* MPI configuration */
+	MPI_Init(&argc, &argv);
+	MPI_Barrier(MPI_COMM_WORLD);
+	
+	start = omp_get_wtime();
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &id);
+    MPI_Comm_size(MPI_COMM_WORLD, &proc);
 
     /* IO configuration */
-    ext = strrchr(argv[1], '.');
-    if(!ext || strcmp(ext, ".in")) exit(1);
-    f_in = fopen(argv[1], "r");
-    if(!f_in) exit(1);
-    out_file = (char*) malloc((strlen(argv[1])+2)*sizeof(char));
-    strcpy(ext, ".out");
-    strcpy(out_file, argv[1]);
-    f_out = fopen(out_file, "w");
-    free(out_file);
-    if(!f_out){
-        fclose(f_in);
-        exit(1);
-    }
-
-    /* Get #variables and #clauses */
-    if(fgets(buf, 128, f_in)){
-        if(DEBUG)
-            printf("%s", buf);
-        if((sscanf(buf, "%d %d", &nvar, &ncl)) != 2){
-            fclose(f_out);
-            fclose(f_in);
-            exit(1);
-        }
-    }else{
-        fclose(f_out);
-        fclose(f_in);
-        exit(1);
-    }
-
+    if(!id){
+		ext = strrchr(argv[1], '.');
+		if(!ext || strcmp(ext, ".in")) exit(1);
+		
+		f_in = fopen(argv[1], "r");
+		if(!f_in) exit(1);
+		
+		out_file = (char*) malloc((strlen(argv[1]) + 2) * sizeof(char));
+		strcpy(ext, ".out");
+		strcpy(out_file, argv[1]);
+		f_out = fopen(out_file, "w");
+		free(out_file);
+		if(!f_out){
+			fclose(f_in);
+			MPI_Finalize();
+			exit(1);
+		}
+	}
+	
+    /* Root node gets #variables and #clauses */
+    if(!id){
+		if(fgets(buf, 128, f_in)){
+			if(DEBUG)
+				printf("%s", buf);
+			if((sscanf(buf, "%d %d", &nvar, &ncl)) != 2){
+				fclose(f_out);
+				fclose(f_in);
+				MPI_Finalize();
+				exit(1);
+			}
+			data_size[0] = nvar;
+			data_size[1] = ncl;
+		}else{
+			fclose(f_out);
+			fclose(f_in);
+			MPI_Finalize();
+			exit(1);
+		}
+	}
+	
+	/* Root node sends #variables and #clauses to all processors */
+	MPI_Bcast(data_size, 2, MPI_INT, 0, MPI_COMM_WORLD);
+	
+	/* Calculate block size (per processor) */
+	
     /* Data structure initialization */
     cls = (int**) malloc(ncl*sizeof(int*));
-    for(i=0; i<ncl; i++){
+    for(i = 0; i < ncl; i++){
         cls[i] = (int*) malloc((min(nvar, 20) + 1) * sizeof(int));
         n = 0;
         if(fgets(buf, 128, f_in)){
@@ -185,11 +200,10 @@ int main(int argc, char *argv[]){
     op->path = (int*) malloc(nvar * sizeof(int));
     op->max = -1;
     op->nMax = 0;
-
+    
     /* Main algorithm */
-    #pragma omp parallel
-        #pragma omp single
-            solve(btree, nvar, cls, ncl, op);
+    if(!id)
+		travel(btree, nvar, cls, ncl, op);
 
     fprintf(f_out, "%d %d\n", op->max, op->nMax);
     if(DEBUG)
@@ -218,6 +232,8 @@ int main(int argc, char *argv[]){
 
     end = omp_get_wtime();
     printf("Elapsed time: %.09f\n", end-start);
+    
+    MPI_Finalize();
 
     return 0;
 }
