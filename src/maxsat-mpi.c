@@ -5,92 +5,29 @@
 
 #define DEBUG 0
 
-/* Recursive function used to generate the intended results */
-void travel(node *ptr, int nvar, int **cls, int ncl, output *op){
-    int i, j, res;
-    
+void master(){
+	int proc;
+	int * proc_queue;
 
-    for(i = 0; i < ncl; i++){
-        if(ptr->level){
-            /* Initializes the position based on father node */
-            ptr->cls_evals[i] = ptr->u->cls_evals[i];
+	MPI_Comm_size(MPI_COMM_WORLD, &proc);
+	
+	/* Processor Queue. 0 - Idle ; 1 - Busy*/
+	proc_queue = (int *) malloc(proc * sizeof(int));
+	memset(proc_queue, 0, sizeof(proc_queue));
+	
+	/* Task Pool */
+	/* A task is the concatenation of 4 integers and a vector
+	 * compromising the "pth taken to a node"
+	 * (Mc, mc, level, ncl, vars) needed to create a node and
+	 * start the working process. */
+	
+	
+	/* Memory Clean-Up */
+	free(proc_queue);
+}
 
-            /* The clause only needs to be evaluated
-            in case there is still no veredict about it */
-            if(!ptr->u->cls_evals[i]){
-
-                /* The clauses' variables are comparared
-                 up to the present level */
-                for(j = 0; cls[i][j] && abs(cls[i][j]) <= ptr->level; j++){
-
-                    /* The result of the variable atribuition
-                    is calculated, for the current clause */
-                    
-                    res = cls[i][j] + ptr->vars[abs(cls[i][j])-1];
-
-                    /* If the result is 0, then the values are symmetric so
-                    there can be no conclusion (about this variable).
-                    Otherwise (res != 0), the clause can be evaluated as true
-                    and will no longer be evaluated. */
-                    if(res){
-                        ptr->cls_evals[i] = 1;
-                        ptr->mc++;
-                        break;
-                    }
-                }
-                /* If the clause has no more variables to be evaluated and
-                it still has no solution, then the clause is evaluated as false */
-                if(!cls[i][j] && !ptr->cls_evals[i]){
-                    ptr->cls_evals[i] = -1;
-                    ptr->Mc--;
-                }
-            }
-        }else{
-            /* The first node is initialized */
-            ptr->cls_evals[i] = 0;
-        }
-    }
-
-    /* After calculation on the current node */
-    /* For debug purposes, it's possible to know the
-    status for the current node */
-    if(DEBUG){
-        for(j=0; j<ptr->level; j++){
-            printf("     ");
-        }
-        printf("n: %d; Mc: %d; mc: %d\n", ptr->level, ptr->Mc, ptr->mc);
-    }
-
-    /* Check if the best possible outcome was reached
-    If TRUE then there is no need to proceed further down the tree (pruning)
-    Else, create children nodes and corresponding information for both */
-    if(ptr->Mc == ptr->mc){
-        if(ptr->Mc == op->max){
-            op->nMax += pow(2, (nvar - ptr->level));
-        }else if(ptr->Mc > op->max){
-            op->max = ptr->Mc;
-            op->nMax = pow(2, (nvar - ptr->level));
-            set_path(op, ptr, nvar);
-        }
-    }else if(ptr->level < nvar && op->max <= ptr->Mc){
-        ptr->l = create_node(ptr->Mc, ptr->mc, ptr->level+1, ncl, ptr);
-        ptr->r = create_node(ptr->Mc, ptr->mc, ptr->level+1, ncl, ptr);
-
-        for(i = 0; i < ptr->level; i++){
-            ptr->l->vars[i] = ptr->vars[i];
-            ptr->r->vars[i] = ptr->vars[i];
-        }
-
-        ptr->l->vars[ptr->level] = -(ptr->level + 1);
-        ptr->r->vars[ptr->level] =  (ptr->level + 1);
-
-        travel(ptr->l, nvar, cls, ncl, op);
-        travel(ptr->r, nvar, cls, ncl, op);
-
-        delete_node(ptr->l);
-        delete_node(ptr->r);
-    }
-    return;
+void slave(){
+	
 }
 
 /* Main function */
@@ -104,14 +41,13 @@ int main(int argc, char *argv[]){
     char buf[128];
     char *p;
     int i, n;
-    int nvar, ncl;
+    int nvar, ncl, offset;
 
     int **cls;
     node *btree;
     output *op;
     
-    int id, proc;
-    int data_size[2];
+    int id, data_size[2];
 
     double start, end;
 
@@ -124,15 +60,20 @@ int main(int argc, char *argv[]){
 	start = omp_get_wtime();
 
     MPI_Comm_rank(MPI_COMM_WORLD, &id);
-    MPI_Comm_size(MPI_COMM_WORLD, &proc);
-
-    /* IO configuration */
+    
     if(!id){
+		/* IO configuration */
 		ext = strrchr(argv[1], '.');
-		if(!ext || strcmp(ext, ".in")) exit(1);
+		if(!ext || strcmp(ext, ".in")){
+			MPI_Finalize();
+			exit(1);
+		}
 		
 		f_in = fopen(argv[1], "r");
-		if(!f_in) exit(1);
+		if(!f_in){
+			MPI_Finalize();
+			exit(1);
+		}
 		
 		out_file = (char*) malloc((strlen(argv[1]) + 2) * sizeof(char));
 		strcpy(ext, ".out");
@@ -144,10 +85,8 @@ int main(int argc, char *argv[]){
 			MPI_Finalize();
 			exit(1);
 		}
-	}
-	
-    /* Root node gets #variables and #clauses */
-    if(!id){
+		
+		/* Root node gets #variables and #clauses */
 		if(fgets(buf, 128, f_in)){
 			if(DEBUG)
 				printf("%s", buf);
@@ -165,73 +104,100 @@ int main(int argc, char *argv[]){
 			MPI_Finalize();
 			exit(1);
 		}
+		
 	}
 	
-	/* Root node sends #variables and #clauses to all processors */
+	/* Node 0 sends #variables and #clauses to all processors */
 	MPI_Bcast(data_size, 2, MPI_INT, 0, MPI_COMM_WORLD);
+	if(id){
+		nvar = data_size[0];
+		ncl = data_size[1];
+	}
 	
-	/* Calculate block size (per processor) */
+    /* Data structure initialization for all processors */  
+    /* Vector with pointers to vector with all clauses */
+    cls = (int**) malloc(ncl*sizeof(int*));    
+    /* Vector with all clauses and variables (Nvars * nCls) */
+    offset = (min(nvar, 20) + 1) * sizeof(int);
+    cls[0] = (int*) malloc(ncl * offset);
+    for(i = 1; i < ncl; i++)
+		cls[i] = cls[i - 1] + offset;
+		
+	/* Node 0 will initialize data structure*/	
+    if(!id){
+		for(i = 0; i < ncl; i++){
+			n = 0;
+			if(fgets(buf, 128, f_in)){
+				p = strtok(buf, " \n");
+				while(p){
+					if(DEBUG)
+						printf("%2d ", atoi(p));
+					cls[i][n++] = atoi(p);
+					p = strtok(NULL, " \n");
+				}
+				if(DEBUG)
+					printf("\n");
+			}else{
+				fclose(f_out);
+				fclose(f_in);
+				MPI_Finalize();
+				exit(1);
+			}
+		}
+	}
 	
-    /* Data structure initialization */
-    cls = (int**) malloc(ncl*sizeof(int*));
-    for(i = 0; i < ncl; i++){
-        cls[i] = (int*) malloc((min(nvar, 20) + 1) * sizeof(int));
-        n = 0;
-        if(fgets(buf, 128, f_in)){
-            p = strtok(buf, " \n");
-            while(p){
-                if(DEBUG)
-                    printf("%2d ", atoi(p));
-                cls[i][n++] = atoi(p);
-                p = strtok(NULL, " \n");
-            }
-            if(DEBUG)
-                printf("\n");
-        }else{
-            fclose(f_out);
-            fclose(f_in);
-            exit(1);
-        }
-    }
+	/* Node 0 Sends data structure for all processors */
+	MPI_Bcast(cls[0], ncl * offset, MPI_INT, 0, MPI_COMM_WORLD);
+	
+    //btree = create_node(ncl, 0, 0, ncl, NULL);
 
-    btree = create_node(ncl, 0, 0, ncl, NULL);
-
-    op = (output*) malloc(sizeof(output));
-    op->path = (int*) malloc(nvar * sizeof(int));
-    op->max = -1;
-    op->nMax = 0;
+    
     
     /* Main algorithm */
-    if(!id)
-		travel(btree, nvar, cls, ncl, op);
+   
+     if(!id){ 
+		// Master
+		
+		/* output structure*/
+		op = (output*) malloc(sizeof(output));
+		op->path = (int*) malloc(nvar * sizeof(int));
+		op->max = -1;
+		op->nMax = 0;
+		
+		master();
 
-    fprintf(f_out, "%d %d\n", op->max, op->nMax);
-    if(DEBUG)
-        printf("Max: %d; nMax: %d\n", op->max, op->nMax);
+		fprintf(f_out, "%d %d\n", op->max, op->nMax);
+		if(DEBUG)
+			printf("Max: %d; nMax: %d\n", op->max, op->nMax);
 
-    for(i=0; i<nvar; i++){
-        fprintf(f_out, "%d ", op->path[i]);
-        if(DEBUG)
-            printf("%d ", op->path[i]);
-    }
-    if(DEBUG)
-        printf("\n");
+		for(i=0; i<nvar; i++){
+			fprintf(f_out, "%d ", op->path[i]);
+			if(DEBUG)
+				printf("%d ", op->path[i]);
+		}
+		if(DEBUG)
+			printf("\n");
 
-    /* Memory clean-up */
-    free(op->path);
-    free(op);
+		/* Memory clean-up */
+		free(op->path);
+		free(op);
+		
+		fclose(f_out);
+		fclose(f_in);
+				
+	 }else{
+		// Slaves
+		slaves();
+	}
+   
     delete_node(btree);
 
-    for(i=0; i<ncl; i++){
-        free(cls[i]);
-    }
-
+    free(cls[0]);
     free(cls);
-    fclose(f_out);
-    fclose(f_in);
 
     end = omp_get_wtime();
-    printf("Elapsed time: %.09f\n", end-start);
+    if(!id)
+		printf("Elapsed time: %.09f\n", end-start);
     
     MPI_Finalize();
 
