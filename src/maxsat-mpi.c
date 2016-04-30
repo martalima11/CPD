@@ -16,11 +16,11 @@ void master(){
 	memset(proc_queue, 0, sizeof(proc_queue));
 	
 	/* Task Pool */
-	/* A task is the concatenation of 4 integers
-	 * (Mc, mc, level, ncl) needed to create a node and
+	/* A task is the concatenation of 4 integers and a vector
+	 * compromising the "pth taken to a node"
+	 * (Mc, mc, level, ncl, vars) needed to create a node and
 	 * start the working process. */
-	root_task = create_node(ncl, 0, 0, ncl, NULL);
-	root_task = send
+	
 	
 	/* Memory Clean-Up */
 	free(proc_queue);
