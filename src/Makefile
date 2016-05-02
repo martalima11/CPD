@@ -9,7 +9,7 @@ logfile = time.log
 samples = 3
 
 all: serial openmp
-	
+
 benchmark: serial openmp
 	@echo "Starting benchmark with $(samples) samples and saving on file $(logdir)/$(logfile)"
 
@@ -128,6 +128,12 @@ openmp_all: openmp
 	done;
 
 	@echo "DONE thank you for your patience"
+
+mpi: maxsat-mpi.c maxsat.o
+	mpicc -o maxsat-mpi maxsat-mpi -Wall -lm -g
+
+mpi_run: mpi
+	mpirun -np 4 maxsat-mpi ./data/$(input)
 
 maxsat.o: maxsat.c maxsat.h
 	gcc -c -o maxsat.o maxsat.c -Wall -lm
