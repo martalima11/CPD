@@ -140,7 +140,6 @@ maxsat.o: maxsat.c maxsat.h
 
 clean:
 	@rm -f *.o
-	@rm -f maxsat-openmp
-	@rm -f maxsat-serial
+	@rm -f maxsat-serial maxsat-openmp maxsat-mpi 
 	@rm -f data/*.out
 	@echo "Done!"

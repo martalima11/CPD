@@ -1,7 +1,7 @@
 #include "task.h"
 
 void insert_task(task_pool tpool, int * task){
-	task_pool aux;
+	task_pool aux, new_task;
 	
 	if(tpool == NULL){
 		tpool = (task_pool) malloc(sizeof(struct _task_pool));
@@ -9,11 +9,19 @@ void insert_task(task_pool tpool, int * task){
 		tpool->next = NULL;
 		return;
 	}
-	for(aux = tpool; aux->next != NULL; aux = aux->next);
+	/* Ordered insertion */									  
+	for(aux = tpool; 
+		aux->next != NULL && 
+			(aux->task[0] > task[0] || 
+			(aux->task[0] == task[0] && 
+			aux->task[1] > task[1])); 
+		aux = aux->next);
 	
-	aux->next = (task_pool) malloc(sizeof(struct _task_pool));
-	aux->next->task = task;
-	aux->next->next = NULL;
+	new_tpool = (task_pool) malloc(sizeof(struct _task_pool));
+	new_tpool->task = task;
+	new_tpool->next = aux->next;
+	aux->next = new_tpool;
+	
 	return; 
 }
 

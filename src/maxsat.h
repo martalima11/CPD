@@ -1,3 +1,6 @@
+#ifndef __MAXSAT_H__
+#define __MAXSAT_H__
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,3 +26,5 @@ typedef struct node {
 node *create_node(int Mc, int mc, int level, int ncl, node *father);
 void delete_node(node *ptr);
 void set_path(output *op, node *ptr, int len);
+
+#endif

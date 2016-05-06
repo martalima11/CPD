@@ -5,8 +5,8 @@
 
 #define DEBUG 0
 
-void master(){
-	int proc;
+void master(int ncls, int nvar){
+	int proc, i, init_level, task;
 	int * proc_queue;
 
 	MPI_Comm_size(MPI_COMM_WORLD, &proc);
@@ -17,11 +17,36 @@ void master(){
 
 	/* Task Pool */
 	/* A task is the concatenation of 4 integers and a vector
-	 * compromising the "pth taken to a node"
-	 * (Mc, mc, level, ncl, vars) needed to create a node and
+	 * compromising the "path taken to a node"
+	 * (Mc, mc, level, vars) needed to create a node and
 	 * start the working process. */
+	 
+	 init_level = min(log2(proc), nvars);
+	 task = (int *) malloc( * sizeof(int));
+	 task[0] = ncls;
+	 task[1] = 0;
+	 task[2] = init_level;
+	
+	 /* Initiate Tasks */
+	 for(i=0; i<pow(2, init_level); i++){
+		for(j=3; j<min(nvar, 20) + 4; j++){ /* criar variavel para condição de paragaem*/
+			if(j-3 < init_level){
+				if((i/pow(2, (j-3))) % 2){
+					task[j] = j - 2;
+				} else {
+					task[j] = 2 - j;
+				}
+			} else {
+				task[j] = 0;
+			}
+		}
+		insert_task(tpool, task);
+	}
 
-
+	while(){
+		
+	 
+	}
 	/* Memory Clean-Up */
 	free(proc_queue);
 }
@@ -120,6 +145,7 @@ int main(int argc, char *argv[]){
     cls = (int**) malloc(ncl*sizeof(int*));
     /* Vector with all clauses and variables (Nvars * nCls) */
     offset = (min(nvar, 20) + 1);
+    
     cls[0] = (int*) malloc(ncl * offset * sizeof(int));
     for(i = 1; i < ncl; i++)
 		cls[i] = cls[i - 1] + offset;
