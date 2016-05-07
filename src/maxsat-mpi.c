@@ -4,9 +4,12 @@
 #include "maxsat.h"
 
 #define DEBUG 0
+#define TASK_TAG 0
+#define STOP_TAG 1
 
 void master(int ncls, int nvar){
-	int proc, i, init_level, task;
+	int proc, i, init_level, task_size, path_size;
+	int * task;
 	int * proc_queue;
 	int stop = 0;
 	
@@ -23,14 +26,18 @@ void master(int ncls, int nvar){
 	 * start the working process. */
 	 
 	 init_level = min(log2(proc), nvars);
-	 task = (int *) malloc((nvar + 3) * sizeof(int));
-	 task[0] = ncls;
-	 task[1] = 0;
-	 task[2] = init_level;
+	 
+	 task_size = nvar + 3;
+	 task = (int *) malloc(task_size * sizeof(int));
+	 task[TASK_Mc] = ncls;
+	 task[TASK_mc] = 0;
+	 task[TASK_level] = init_level;
 	
 	 /* Initiate Tasks */
+	 path_size = min(min(nvar, 20) + 1, init_level) + TASK_vars;
+	 
 	 for(i = 0; i < pow(2, init_level); i++){
-		for(j = 3; j < min(min(nvar, 20) + 1, init_level) + 3; j++){    /* criar variavel para condição de paragaem*/
+		for(j = TASK_vars; j < path_size; j++){
 			if((i/pow(2, (j-3))) % 2){
 				task[j] = j - 2;
 			}else{
@@ -49,8 +56,130 @@ void master(int ncls, int nvar){
 	free(proc_queue);
 }
 
-void slave(){
-	printf("Hello\n");
+/* Recursive function used to generate the intended results */
+void solve(node *ptr, int nvar, int **cls, int ncl, int * op){
+    int i, j, res;
+
+    for(i = 0; i < ncl; i++){
+        if(ptr->level){
+            /* Initializes the position based on father node */
+            ptr->cls_evals[i] = ptr->u->cls_evals[i];
+
+            /* The clause only needs to be evaluated
+            in case there is still no veredict about it */
+            if(!ptr->u->cls_evals[i]){
+
+                /* The clauses' variables are comparared
+                 up to the present level */
+                for(j = 0; cls[i][j] && abs(cls[i][j]) <= ptr->level; j++){
+
+                    /* The result of the variable atribuition
+                    is calculated, for the current clause */
+                    res = cls[i][j] + ptr->vars[abs(cls[i][j])-1];
+
+                    /* If the result is 0, then the values are symmetric so
+                    there can be no conclusion (about this variable).
+                    Otherwise (res != 0), the clause can be evaluated as true
+                    and will no longer be evaluated. */
+                    if(res){
+                        ptr->cls_evals[i] = 1;
+                        ptr->mc++;
+                        break;
+                    }
+                }
+                /* If the clause has no more variables to be evaluated and
+                it still has no solution, then the clause is evaluated as false */
+                if(!cls[i][j] && !ptr->cls_evals[i]){
+                    ptr->cls_evals[i] = -1;
+                    ptr->Mc--;
+                }
+            }
+        }else{
+            /* The first node is initialized */
+            ptr->cls_evals[i] = 0;
+        }
+    }
+
+    /* After calculation on the current node */
+    /* For debug purposes, it's possible to know the
+    status for the current node */
+    if(DEBUG){
+        for(j=0; j<ptr->level; j++){
+            printf("     ");
+        }
+        printf("n: %d; Mc: %d; mc: %d\n", ptr->level, ptr->Mc, ptr->mc);
+    }
+
+    /* Check if the best possible outcome was reached
+    If TRUE then there is no need to proceed further down the tree (pruning)
+    Else, create children nodes and corresponding information for both */
+    if(ptr->Mc == ptr->mc){
+        if(ptr->Mc == op->max){
+            op->nMax += pow(2, (nvar - ptr->level));
+        }else if(ptr->Mc > op->max){
+            op->max = ptr->Mc;
+            op->nMax = pow(2, (nvar - ptr->level));
+            set_path(op, ptr, nvar);
+        }
+    }else if(ptr->level < nvar && op->max <= ptr->Mc){
+        ptr->l = create_node(ptr->Mc, ptr->mc, ptr->level+1, ncl, ptr);
+        ptr->r = create_node(ptr->Mc, ptr->mc, ptr->level+1, ncl, ptr);
+
+        for(i = 0; i < ptr->level; i++){
+            ptr->l->vars[i] = ptr->vars[i];
+            ptr->r->vars[i] = ptr->vars[i];
+        }
+
+        ptr->l->vars[ptr->level] = -(ptr->level + 1);
+        ptr->r->vars[ptr->level] =  (ptr->level + 1);
+
+        solve(ptr->l, nvar, cls, ncl, op);
+        solve(ptr->r, nvar, cls, ncl, op);
+
+        delete_node(ptr->l);
+        delete_node(ptr->r);
+    }
+    return;
+}
+
+
+void slave(int id, int ncls, int nvar, int ** cls, output * op){
+	int * task;
+	int i, task_size;
+	
+	MPI_STATUS status;
+	
+	/* Allocate task */
+	task_size = nvar + 3;
+	task = (int *) malloc(task_size * sizeof(int));
+	
+	while(1){
+		/* Receive task to work on */
+		MPI_Recv(task, task_size, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+		
+		if(status.MPI_TAG == STOP_TAG){
+			free(task);
+			break;
+		}
+	
+		/* Initialize node based on task */
+		btree = create_node(task[TASK_Mc], task[TASK_mc], task[TASK_level], ncl, NULL);
+		for(i = 0; i < btree->level; i++)
+            btree->vars[i] = task[TASK_vars + i];
+		for(i = 0; i < ncl; i++)
+			btree->cls_evals[i] = 0;
+			
+		/* Work on node */
+		task[TASK_max] = -1;
+		task[TASK_nmax] = 0;
+		
+		solve(btree, nvar, cls, ncl, task);
+		/* Send result */
+		
+		
+	}
+	
+	return;
 }
 
 /* Main function */
@@ -174,21 +303,15 @@ int main(int argc, char *argv[]){
 	/* Node 0 Sends data structure for all processors */
 	MPI_Bcast(cls[0], ncl * offset, MPI_INT, 0, MPI_COMM_WORLD);
 
-    //btree = create_node(ncl, 0, 0, ncl, NULL);
-
-
-
+	/* output structure*/
+	op = (output*) malloc(sizeof(output));
+	op->path = (int*) malloc(nvar * sizeof(int));
+	op->max = -1;
+	op->nMax = 0;
+    
     /* Main algorithm */
-
-     if(!id){
+    if(!id){
 		// Master
-
-		/* output structure*/
-		op = (output*) malloc(sizeof(output));
-		op->path = (int*) malloc(nvar * sizeof(int));
-		op->max = -1;
-		op->nMax = 0;
-
 		master();
 
 		fprintf(f_out, "%d %d\n", op->max, op->nMax);
@@ -212,7 +335,7 @@ int main(int argc, char *argv[]){
 
 	 }else{
 		// Slaves
-		slaves();
+		slave();
 	}
 
     delete_node(btree);
