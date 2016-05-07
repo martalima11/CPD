@@ -50,7 +50,7 @@ void master(int ncls, int nvar){
 }
 
 void slave(){
-
+	printf("Hello\n");
 }
 
 /* Main function */
