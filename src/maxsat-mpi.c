@@ -8,7 +8,8 @@
 void master(int ncls, int nvar){
 	int proc, i, init_level, task;
 	int * proc_queue;
-
+	int stop = 0;
+	
 	MPI_Comm_size(MPI_COMM_WORLD, &proc);
 
 	/* Processor Queue. 0 - Idle ; 1 - Busy*/
@@ -22,28 +23,25 @@ void master(int ncls, int nvar){
 	 * start the working process. */
 	 
 	 init_level = min(log2(proc), nvars);
-	 task = (int *) malloc( * sizeof(int));
+	 task = (int *) malloc((nvar + 3) * sizeof(int));
 	 task[0] = ncls;
 	 task[1] = 0;
 	 task[2] = init_level;
 	
 	 /* Initiate Tasks */
-	 for(i=0; i<pow(2, init_level); i++){
-		for(j=3; j<min(nvar, 20) + 4; j++){ /* criar variavel para condição de paragaem*/
-			if(j-3 < init_level){
-				if((i/pow(2, (j-3))) % 2){
-					task[j] = j - 2;
-				} else {
-					task[j] = 2 - j;
-				}
-			} else {
-				task[j] = 0;
+	 for(i = 0; i < pow(2, init_level); i++){
+		for(j = 3; j < min(min(nvar, 20) + 1, init_level) + 3; j++){    /* criar variavel para condição de paragaem*/
+			if((i/pow(2, (j-3))) % 2){
+				task[j] = j - 2;
+			}else{
+				task[j] = 2 - j;
 			}
 		}
 		insert_task(tpool, task);
 	}
 
-	while(){
+	while(!stop){
+	
 		
 	 
 	}
