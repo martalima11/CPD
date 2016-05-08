@@ -132,8 +132,10 @@ void solve(node *ptr, int nvar, int **cls, int ncl, int * op){
 
         ptr->l->vars[ptr->level] = -(ptr->level + 1);
         ptr->r->vars[ptr->level] =  (ptr->level + 1);
-
+		
+		/**/
         solve(ptr->l, nvar, cls, ncl, op);
+        /**/
         solve(ptr->r, nvar, cls, ncl, op);
 
         delete_node(ptr->l);
@@ -157,11 +159,15 @@ void slave(int id, int ncls, int nvar, int ** cls, output * op){
 		/* Receive task to work on */
 		MPI_Recv(task, task_size, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 		
+		/* Clean exit */
 		if(status.MPI_TAG == STOP_TAG){
 			free(task);
 			break;
 		}
-	
+		
+		op->Mc = task[TASK_Mc];
+		op->mc = task[TASK_mc];
+		
 		/* Initialize node based on task */
 		btree = create_node(task[TASK_Mc], task[TASK_mc], task[TASK_level], ncl, NULL);
 		for(i = 0; i < btree->level; i++)
@@ -169,16 +175,25 @@ void slave(int id, int ncls, int nvar, int ** cls, output * op){
 		for(i = 0; i < ncl; i++)
 			btree->cls_evals[i] = 0;
 			
-		/* Work on node */
-		task[TASK_max] = -1;
-		task[TASK_nmax] = 0;
+		/* Work on subtree */
+		solve(btree, nvar, cls, ncl, task, op);
 		
-		solve(btree, nvar, cls, ncl, task);
 		/* Send result */
-		
+		/*update task with op's information */
+		updateTask(task, op, nvar);
+		MPI_Send((void *) task, task_size, MPI_INT, i+1, STOP_TAG, MPI_COMM_WORLD);	
 		
 	}
 	
+	return;
+}
+
+/* Change Structure of task for sending the result to master*/
+void updateTask(int * task, output * op, int nvar){
+	task[TASK_max]=op->max;
+	task[TASK_nmax]=op->nMax;
+	for(i=0;i<nvar;i++)
+		task[i+2]=op->path;
 	return;
 }
 
