@@ -6,10 +6,11 @@
 #define DEBUG 0
 
 void master(int ncls, int nvar){
-	int proc, i, init_level, task;
+	int proc, i, init_level, task_size;
+	int * task;
 	int * proc_queue;
 	int stop = 0;
-	
+
 	MPI_Comm_size(MPI_COMM_WORLD, &proc);
 
 	/* Processor Queue. 0 - Idle ; 1 - Busy*/
@@ -21,13 +22,14 @@ void master(int ncls, int nvar){
 	 * compromising the "path taken to a node"
 	 * (Mc, mc, level, vars) needed to create a node and
 	 * start the working process. */
-	 
+
 	 init_level = min(log2(proc), nvars);
-	 task = (int *) malloc((nvar + 3) * sizeof(int));
+	 task_size = nvar + 3;
+	 task = (int *) malloc(task_size * sizeof(int));
 	 task[0] = ncls;
 	 task[1] = 0;
 	 task[2] = init_level;
-	
+
 	 /* Initiate Tasks */
 	 for(i = 0; i < pow(2, init_level); i++){
 		for(j = 3; j < min(min(nvar, 20) + 1, init_level) + 3; j++){    /* criar variavel para condição de paragaem*/
@@ -37,13 +39,16 @@ void master(int ncls, int nvar){
 				task[j] = 2 - j;
 			}
 		}
-		insert_task(tpool, task);
+		if( i < proc - 1 ){
+			MPI_Send((void *) task, task_size, MPI_INT, i+1, TASK_TAG, MPI_COMM_WORLD);
+		} else {
+			insert_task(tpool, task);
+		}
 	}
 
-	while(!stop){
-	
-		
-	 
+	while(!stop){								/* especificar o tag para ser fixe*/
+		MPI_RECV(task, task_size, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
 	}
 	/* Memory Clean-Up */
 	free(proc_queue);
@@ -143,7 +148,7 @@ int main(int argc, char *argv[]){
     cls = (int**) malloc(ncl*sizeof(int*));
     /* Vector with all clauses and variables (Nvars * nCls) */
     offset = (min(nvar, 20) + 1);
-    
+
     cls[0] = (int*) malloc(ncl * offset * sizeof(int));
     for(i = 1; i < ncl; i++)
 		cls[i] = cls[i - 1] + offset;
