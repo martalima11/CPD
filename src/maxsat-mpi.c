@@ -5,16 +5,28 @@
 
 #define DEBUG 0
 
+int get_proc( int *proc_queue, int queue_size ){
+	int i;
+	for(i = 0; i < queue_size && proc_queue; i++);
+	if(i == queue_size){
+		return -1;
+	}else{
+		return i;
+	}
+}
+
 void master(int ncls, int nvar){
-	int proc, i, init_level, task_size;
+	int nproc, init_level, task_size;
+	int i, p;
 	int * task;
 	int * proc_queue;
 	int stop = 0;
+	MPI_STATUS status;
 
-	MPI_Comm_size(MPI_COMM_WORLD, &proc);
+	MPI_Comm_size(MPI_COMM_WORLD, &nproc);
 
 	/* Processor Queue. 0 - Idle ; 1 - Busy*/
-	proc_queue = (int *) malloc(proc * sizeof(int));
+	proc_queue = (int *) malloc((nproc-1) * sizeof(int));
 	memset(proc_queue, 0, sizeof(proc_queue));
 
 	/* Task Pool */
@@ -23,7 +35,7 @@ void master(int ncls, int nvar){
 	 * (Mc, mc, level, vars) needed to create a node and
 	 * start the working process. */
 
-	 init_level = min(log2(proc), nvars);
+	 init_level = min(log2(nproc-1), nvars);
 	 task_size = nvar + 3;
 	 task = (int *) malloc(task_size * sizeof(int));
 	 task[0] = ncls;
@@ -40,15 +52,39 @@ void master(int ncls, int nvar){
 			}
 		}
 		if( i < proc - 1 ){
+			/* começa a enviar para o processador 1, pois o 0 é o main */
 			MPI_Send((void *) task, task_size, MPI_INT, i+1, TASK_TAG, MPI_COMM_WORLD);
+			proc_queue[i] = 1;
 		} else {
 			insert_task(tpool, task);
 		}
 	}
 
-	while(!stop){								/* especificar o tag para ser fixe*/
-		MPI_RECV(task, task_size, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
+	while(!stop){
+		MPI_RECV(task, task_size, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+		switch(status.MPI_TAG){
+			case TASK_TAG:
+				p = get_proc(proc_queue, nproc-1);
+				if(p == -1){
+					insert_task(tpool, task);
+				}else{
+					MPI_Send((void *) task, task_size, MPI_INT, p+1, TASK_TAG, MPI_COMM_WORLD);
+					proc_queue[p] = 1;
+				}
+				break;
+			case STOP_TAG:
+				task = get_task(tpool);
+				if(task == NULL){
+					/* processador 1 indexado na posição 0, pois o main não conta para o vector */
+					proc_queue[status.MPI_SOURCE - 1] = 0;
+				} else {
+					MPI_Send((void *) task, task_size, MPI_INT, status.MPI_SOURCE, TASK_TAG, MPI_COMM_WORLD);
+				}
+				break;
+			default:
+				/*Justin case*/
+				break;
+		}
 	}
 	/* Memory Clean-Up */
 	free(proc_queue);
