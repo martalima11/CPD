@@ -4,7 +4,7 @@
 #include "maxsat.h"
 #include "task.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #define TASK_TAG 0
 #define STOP_TAG 1
 
@@ -31,30 +31,29 @@ int get_proc(int *proc_queue, int queue_size){
 /* Change Structure of task for sending the result to master*/
 void updateTask(int * task, output * op, int nvar){
 	int i;
-	
+
 	task[TASK_max] = op->max;
 	task[TASK_nmax] = op->nMax;
 	for(i = 0; i < nvar; i++)
-		task[i + TASK_maxpath] = op->path[i];
+		task[TASK_maxpath + i] = op->path[i];
 	return;
 }
 
-void updateMax(output * op, int * buffer){
-	
+void updateMax(output * op, int * buffer, int path_size){
 	if(buffer[TASK_max] == op->max){
 		op->nMax += buffer[TASK_nmax];
 	}else if(buffer[TASK_max] > op->max){
-		op->max = ptr->Mc;
-		op->nMax = pow(2, (nvar - ptr->level));
-		// TODO: Memecopy
-		set_path(op, , nvar);
+		op->max = buffer[TASK_max];
+		op->nMax = buffer[TASK_nmax];
+		memcpy(op->path, &buffer[TASK_maxpath], path_size);
 	}
 }
+
 /* Recursive function used to generate the intended results */
 void solve(node *ptr, int nvar, int **cls, int ncl, output * op, int first){
     int i, j, res;
 	int *task;
-	
+
 	for(i = 0; i < ncl; i++){
 		/* Initializes the position based on father node */
 		if(!first)
@@ -91,18 +90,9 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output * op, int first){
 		}
 	}
 
-	
+
 
     /* After calculation on the current node */
-    /* For debug purposes, it's possible to know the
-    status for the current node */
-    if(DEBUG){
-        for(j=0; j<ptr->level; j++){
-            printf("     ");
-        }
-        printf("n: %d; Mc: %d; mc: %d\n", ptr->level, ptr->Mc, ptr->mc);
-    }
-
     /* Check if the best possible outcome was reached
     If TRUE then there is no need to proceed further down the tree (pruning)
     Else, create children nodes and corresponding information for both */
@@ -117,7 +107,7 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output * op, int first){
     }else if(ptr->level < nvar && op->max <= ptr->Mc){
         if(!first) ptr->l = create_node(ptr->Mc, ptr->mc, ptr->level+1, ncl, ptr);
         else {
-			task = (int *) malloc((nvar+3)*sizeof(int));
+			task = (int *) malloc((nvar + 3) * sizeof(int));
 			task[TASK_Mc] = ptr->Mc;
 			task[TASK_mc] = ptr->mc;
 			task[TASK_level] = ptr->level + 1;
@@ -127,25 +117,26 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output * op, int first){
         for(i = 0; i < ptr->level; i++){
             if(!first) ptr->l->vars[i] = ptr->vars[i];
             else task[TASK_vars+i] = ptr->vars[i];
-            ptr->r->vars[i] = ptr->vars[i];
+
+			ptr->r->vars[i] = ptr->vars[i];
         }
-      
 
 		if(!first){
 			ptr->l->vars[ptr->level] = -(ptr->level + 1);
 			solve(ptr->l, nvar, cls, ncl, op, 0);
 			delete_node(ptr->l);
-		} else {
+		}else{
 			task[TASK_vars + ptr->level] = -(ptr->level + 1);
-			printf("Saving first born from evil twin\n");
+			if(DEBUG)
+				printf("Saving first born from evil twin\n");
 			MPI_Send((void *) task, nvar+3, MPI_INT, 0, TASK_TAG, MPI_COMM_WORLD);
 			free(task);
 		}
-		
+
         ptr->r->vars[ptr->level] =  (ptr->level + 1);
         solve(ptr->r, nvar, cls, ncl, op, 0);
         delete_node(ptr->r);
-        
+
     }
     return;
 }
@@ -157,9 +148,9 @@ void master(int ncls, int nvar, output * op){
 	int * buffer;
 	int * proc_queue;
 	int stop = 0;
-	
+
 	task_pool tpool = NULL;
-	
+
 	MPI_Status status;
 
 	MPI_Comm_size(MPI_COMM_WORLD, &nproc);
@@ -182,7 +173,7 @@ void master(int ncls, int nvar, output * op){
 
 	 /* Initiate Tasks */
 	 path_size = min(min(nvar, 20) + 1, init_level) + TASK_vars;
-		
+
 	 for(i = 0; i < pow(2, init_level); i++){
 		for(j = TASK_vars; j < path_size; j++){
 			if((int)(i/pow(2, (j - 3))) % 2){
@@ -193,16 +184,18 @@ void master(int ncls, int nvar, output * op){
 		}
 		if( i < nproc - 1 ){
 			/* começa a enviar para o processador 1, pois o 0 é o main */
-			printf("Sending 'TASK' to process #%d from ROOT\n", i + 1);
+			if(DEBUG)
+				printf("Sending 'TASK' to process #%d from ROOT\n", i + 1);
 			MPI_Send((void *) buffer, task_size, MPI_INT, i + 1, TASK_TAG, MPI_COMM_WORLD);
 			proc_queue[i] = 1;
 		}else{
 			insert_task(tpool, buffer);
 		}
 	}
-	
+
 	while(!stop){
-		printf("ROOT Receiving\n");
+		if(DEBUG)
+			printf("ROOT Receiving\n");
 		MPI_Recv(buffer, task_size, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 		switch(status.MPI_TAG){
 			case TASK_TAG:
@@ -211,20 +204,29 @@ void master(int ncls, int nvar, output * op){
 					insert_task(tpool, buffer);
 				}else{
 					// check which is the task that it should send
-					printf("ROOT sends work to process #%d\n", p + 1);
+					if(DEBUG)
+						printf("ROOT sends work to process #%d\n", p + 1);
 					MPI_Send((void *) buffer, task_size, MPI_INT, p + 1, TASK_TAG, MPI_COMM_WORLD);
 					proc_queue[p] = 1;
 				}
 				break;
 			case STOP_TAG:
-				printf("ROOT working on received task from #%d\n", status.MPI_SOURCE);
+				if(DEBUG)
+					printf("ROOT working on received task from #%d\n", status.MPI_SOURCE);
+				updateMax(op, buffer, nvar);
+
+				/* Somewhere around here the master should evaluate the task queue
+				 * and discard tasks with possible maximums (Mc) lower than
+				 * op->max */
+
 				switch(get_task(tpool, buffer)){
 					case(-1):
 						/* processador 1 indexado na posição 0, pois o main não conta para o vector */
 						proc_queue[status.MPI_SOURCE - 1] = 0;
 						break;
 					case(0):
-						printf("ROOT sends work to process #%d\n", status.MPI_SOURCE);
+						if(DEBUG)
+							printf("ROOT sends work to process #%d\n", status.MPI_SOURCE);
 						MPI_Send((void *) buffer, task_size, MPI_INT, status.MPI_SOURCE, TASK_TAG, MPI_COMM_WORLD);
 						break;
 					default:
@@ -241,14 +243,15 @@ void master(int ncls, int nvar, output * op){
 		}
 	}
 	for(i = 0; i < nproc - 1; i++){
-		printf("Sending 'STOP' to process #%d from ROOT\n", i+1);
+		if(DEBUG)
+			printf("Sending 'STOP' to process #%d from ROOT\n", i+1);
 		MPI_Send((void *) buffer, task_size, MPI_INT, i + 1, STOP_TAG, MPI_COMM_WORLD);
 	}
-	
+
 	/* Memory Clean-Up */
 	free(proc_queue);
 	free(buffer);
-	
+
 	return;
 }
 
@@ -256,7 +259,7 @@ void slave(int id, int ncl, int nvar, int ** cls, output * op){
 	int * task;
 	int i, task_size;
 	node *btree;
-	
+
 	MPI_Status status;
 
 	/* Allocate task */
@@ -265,7 +268,8 @@ void slave(int id, int ncl, int nvar, int ** cls, output * op){
 
 	while(1){
 		/* Receive task to work on */
-		printf("Process #%d Receiving\n", id);
+		if(DEBUG)
+			printf("Process #%d Receiving\n", id);
 		MPI_Recv(task, task_size, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
 		/* Clean exit */
@@ -290,14 +294,14 @@ void slave(int id, int ncl, int nvar, int ** cls, output * op){
 		/* Send result */
 		/* update task with op's information */
 		updateTask(task, op, nvar);
-		printf("Sending 'STOP' to ROOT from process #%d\n", id);
+		if(DEBUG)
+			printf("Sending 'STOP' to ROOT from process #%d\n", id);
 		MPI_Send((void *) task, task_size, MPI_INT, 0, STOP_TAG, MPI_COMM_WORLD);
 		delete_node(btree);
 	}
 
 	return;
 }
-
 
 /* Main function */
 int main(int argc, char *argv[]){
@@ -439,23 +443,19 @@ int main(int argc, char *argv[]){
 			if(DEBUG)
 				printf("%d ", op->path[i]);
 		}
-		if(DEBUG)
-			printf("\n");
-
-		/* Memory clean-up */
-		free(op->path);
-		free(op);
+		if(DEBUG) printf("\n");
 
 		fclose(f_out);
 		fclose(f_in);
 
-	 }else{
+	}else{
 		// Slaves
 		slave(id, ncl, nvar, cls, op);
 	}
 
-//    delete_node(btree);
-
+	/* Memory clean-up */
+	free(op->path);
+	free(op);
     free(cls[0]);
     free(cls);
 
