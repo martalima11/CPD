@@ -2,14 +2,25 @@
 #include <mpi.h>
 
 #include "maxsat.h"
+#include "task.h"
 
 #define DEBUG 0
 #define TASK_TAG 0
 #define STOP_TAG 1
 
+int check_empty(int *proc_queue, int queue_size){
+	int i;
+	for(i = 0; i < queue_size && !proc_queue[i]; i++);
+	if(i == queue_size){
+		return 1;
+	}else{
+		return 0;
+	}
+}
+
 int get_proc(int *proc_queue, int queue_size){
 	int i;
-	for(i = 0; i < queue_size && proc_queue; i++);
+	for(i = 0; i < queue_size && proc_queue[i]; i++);
 	if(i == queue_size){
 		return -1;
 	}else{
@@ -17,89 +28,22 @@ int get_proc(int *proc_queue, int queue_size){
 	}
 }
 
-void master(int ncls, int nvar){
-	int nproc, init_level, task_size;
-	int i, p;
-	int * task;
-	int * proc_queue;
-	int stop = 0;
-	MPI_STATUS status;
-
-	MPI_Comm_size(MPI_COMM_WORLD, &nproc);
-
-	/* Processor Queue. 0 - Idle ; 1 - Busy*/
-	proc_queue = (int *) malloc((nproc - 1) * sizeof(int));
-	memset(proc_queue, 0, sizeof(proc_queue));
-
-	/* Task Pool */
-	/* A task is the concatenation of 4 integers and a vector
-	 * compromising the "path taken to a node"
-	 * (Mc, mc, level, vars) needed to create a node and
-	 * start the working process. */
-	 init_level = min(log2(nproc-1) , nvars);
-
-	 task_size = nvar + 3;
-	 task = (int *) malloc(task_size * sizeof(int));
-	 task[TASK_Mc] = ncls;
-	 task[TASK_mc] = 0;
-	 task[TASK_level] = init_level;
-
-	 /* Initiate Tasks */
-	 path_size = min(min(nvar, 20) + 1, init_level) + TASK_vars;
-
-	 for(i = 0; i < pow(2, init_level); i++){
-		for(j = TASK_vars; j < path_size; j++){
-			if((i/pow(2, (j - 3))) % 2){
-				task[j] = j - 2;
-			}else{
-				task[j] = 2 - j;
-			}
-		}
-		if( i < nproc - 1 ){
-			/* começa a enviar para o processador 1, pois o 0 é o main */
-			MPI_Send((void *) task, task_size, MPI_INT, i + 1, TASK_TAG, MPI_COMM_WORLD);
-			proc_queue[i] = 1;
-		}else{
-			insert_task(tpool, task);
-		}
-	}
-
-	while(!stop){
-		MPI_RECV(task, task_size, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-		switch(status.MPI_TAG){
-			case TASK_TAG:
-				p = get_proc(proc_queue, nproc - 1);
-				if(p == -1){
-					insert_task(tpool, task);
-				}else{
-					MPI_Send((void *) task, task_size, MPI_INT, p + 1, TASK_TAG, MPI_COMM_WORLD);
-					proc_queue[p] = 1;
-				}
-				break;
-			case STOP_TAG:
-				task = get_task(tpool);
-				if(task == NULL){
-					/* processador 1 indexado na posição 0, pois o main não conta para o vector */
-					proc_queue[status.MPI_SOURCE - 1] = 0;
-				}else{
-					MPI_Send((void *) task, task_size, MPI_INT, status.MPI_SOURCE, TASK_TAG, MPI_COMM_WORLD);
-				}
-				break;
-			default:
-				/*Justin case*/
-				break;
-		}
-	}
-	/* Memory Clean-Up */
-	free(proc_queue);
+/* Change Structure of task for sending the result to master*/
+void updateTask(int * task, output * op, int nvar){
+	int i;
+	
+	task[TASK_max] = op->max;
+	task[TASK_nmax] = op->nMax;
+	for(i = 0; i < nvar; i++)
+		task[i + TASK_maxpath] = op->path[i];
+	return;
 }
 
 /* Recursive function used to generate the intended results */
-void solve(node *ptr, int nvar, int **cls, int ncl, int * op){
+void solve(node *ptr, int nvar, int **cls, int ncl, output * op, int first){
     int i, j, res;
-
-    for(i = 0; i < ncl; i++){
-        if(ptr->level){
+	if(!first){
+		for(i = 0; i < ncl; i++){
             /* Initializes the position based on father node */
             ptr->cls_evals[i] = ptr->u->cls_evals[i];
 
@@ -132,11 +76,13 @@ void solve(node *ptr, int nvar, int **cls, int ncl, int * op){
                     ptr->Mc--;
                 }
             }
-        }else{
-            /* The first node is initialized */
-            ptr->cls_evals[i] = 0;
-        }
-    }
+		}
+    } else{
+		/* The first node is initialized */
+		for(i = 0; i < ncl; i++){
+			ptr->cls_evals[i] = 0;
+		}
+	}
 
     /* After calculation on the current node */
     /* For debug purposes, it's possible to know the
@@ -171,10 +117,10 @@ void solve(node *ptr, int nvar, int **cls, int ncl, int * op){
         ptr->l->vars[ptr->level] = -(ptr->level + 1);
         ptr->r->vars[ptr->level] =  (ptr->level + 1);
 
-		/**/
-        solve(ptr->l, nvar, cls, ncl, op);
+		
+        solve(ptr->l, nvar, cls, ncl, op, 0);
         /**/
-        solve(ptr->r, nvar, cls, ncl, op);
+        solve(ptr->r, nvar, cls, ncl, op, 0);
 
         delete_node(ptr->l);
         delete_node(ptr->r);
@@ -183,11 +129,112 @@ void solve(node *ptr, int nvar, int **cls, int ncl, int * op){
 }
 
 
-void slave(int id, int ncls, int nvar, int ** cls, output * op){
+void master(int ncls, int nvar){
+	int nproc, init_level, task_size, path_size;
+	int i, j, p;
+	int * buffer;
+	int * proc_queue;
+	int stop = 0;
+	
+	task_pool tpool = NULL;
+	
+	MPI_Status status;
+
+	MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+
+	/* Processor Queue. 0 - Idle ; 1 - Busy*/
+	proc_queue = (int *) malloc((nproc - 1) * sizeof(int));
+	memset(proc_queue, 0, (nproc - 1) * sizeof(int));
+
+	/* Task Pool */
+	/* A task is the concatenation of 4 integers and a vector
+	 * compromising the "path taken to a node"
+	 * (Mc, mc, level, vars) needed to create a node and
+	 * start the working process. */
+	 init_level = min(log2(nproc), nvar);
+	 task_size = nvar + 3;
+	 buffer = (int *) malloc(task_size * sizeof(int));
+	 buffer[TASK_Mc] = ncls;
+	 buffer[TASK_mc] = 0;
+	 buffer[TASK_level] = init_level;
+
+	 /* Initiate Tasks */
+	 path_size = min(min(nvar, 20) + 1, init_level) + TASK_vars;
+		
+	 for(i = 0; i < pow(2, init_level); i++){
+		for(j = TASK_vars; j < path_size; j++){
+			if((int)(i/pow(2, (j - 3))) % 2){
+				buffer[j] = j - 2;
+			}else{
+				buffer[j] = 2 - j;
+			}
+		}
+		if( i < nproc - 1 ){
+			/* começa a enviar para o processador 1, pois o 0 é o main */
+			printf("Sending 'TASK' to process #%d from ROOT\n", i + 1);
+			MPI_Send((void *) buffer, task_size, MPI_INT, i + 1, TASK_TAG, MPI_COMM_WORLD);
+			proc_queue[i] = 1;
+		}else{
+			insert_task(tpool, buffer);
+		}
+	}
+	
+	while(!stop){
+		printf("ROOT Receiving\n");
+		MPI_Recv(buffer, task_size, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+		switch(status.MPI_TAG){
+			case TASK_TAG:
+				p = get_proc(proc_queue, nproc - 1);
+				if(p == -1){
+					insert_task(tpool, buffer);
+				}else{
+					// check which is the task that it should send
+					printf("ROOT sends work to process #%d\n", p + 1);
+					MPI_Send((void *) buffer, task_size, MPI_INT, p + 1, TASK_TAG, MPI_COMM_WORLD);
+					proc_queue[p] = 1;
+				}
+				break;
+			case STOP_TAG:
+				switch(get_task(tpool, buffer)){
+					case(-1):
+						/* processador 1 indexado na posição 0, pois o main não conta para o vector */
+						proc_queue[status.MPI_SOURCE - 1] = 0;
+						break;
+					case(0):
+						printf("ROOT sends work to process #%d\n", status.MPI_SOURCE);
+						MPI_Send((void *) buffer, task_size, MPI_INT, status.MPI_SOURCE, TASK_TAG, MPI_COMM_WORLD);
+						break;
+					default:
+						/* Just in case */
+						break;
+					}
+				break;
+			default:
+				/* Just in case */
+				break;
+		}
+		if(check_empty(proc_queue, nproc - 1)){
+			stop = 1;
+		}
+	}
+	for(i = 0; i < nproc - 1; i++){
+		printf("Sending 'STOP' to process #%d from ROOT\n", i+1);
+		MPI_Send((void *) buffer, task_size, MPI_INT, i + 1, STOP_TAG, MPI_COMM_WORLD);
+	}
+	
+	/* Memory Clean-Up */
+	free(proc_queue);
+	free(buffer);
+	
+	return;
+}
+
+void slave(int id, int ncl, int nvar, int ** cls, output * op){
 	int * task;
 	int i, task_size;
-
-	MPI_STATUS status;
+	node *btree;
+	
+	MPI_Status status;
 
 	/* Allocate task */
 	task_size = nvar + 3;
@@ -195,6 +242,7 @@ void slave(int id, int ncls, int nvar, int ** cls, output * op){
 
 	while(1){
 		/* Receive task to work on */
+		printf("Process #%d Receiving\n", id);
 		MPI_Recv(task, task_size, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
 		/* Clean exit */
@@ -203,8 +251,8 @@ void slave(int id, int ncls, int nvar, int ** cls, output * op){
 			break;
 		}
 
-		op->Mc = task[TASK_Mc];
-		op->mc = task[TASK_mc];
+		op->max = task[TASK_mc];
+		op->nMax = 0;
 
 		/* Initialize node based on task */
 		btree = create_node(task[TASK_Mc], task[TASK_mc], task[TASK_level], ncl, NULL);
@@ -214,26 +262,19 @@ void slave(int id, int ncls, int nvar, int ** cls, output * op){
 			btree->cls_evals[i] = 0;
 
 		/* Work on subtree */
-		solve(btree, nvar, cls, ncl, task, op);
+		solve(btree, nvar, cls, ncl, op, 1);
 
 		/* Send result */
-		/*update task with op's information */
+		/* update task with op's information */
 		updateTask(task, op, nvar);
-		MPI_Send((void *) task, task_size, MPI_INT, i+1, STOP_TAG, MPI_COMM_WORLD);
-
+		printf("Sending 'STOP' to ROOT from process #%d\n", id);
+		MPI_Send((void *) task, task_size, MPI_INT, 0, STOP_TAG, MPI_COMM_WORLD);
+		delete_node(btree);
 	}
 
 	return;
 }
 
-/* Change Structure of task for sending the result to master*/
-void updateTask(int * task, output * op, int nvar){
-	task[TASK_max]=op->max;
-	task[TASK_nmax]=op->nMax;
-	for(i=0;i<nvar;i++)
-		task[i+2]=op->path;
-	return;
-}
 
 /* Main function */
 int main(int argc, char *argv[]){
@@ -249,7 +290,6 @@ int main(int argc, char *argv[]){
     int nvar, ncl, offset;
 
     int **cls;
-    node *btree;
     output *op;
 
     int id, data_size[2];
@@ -365,7 +405,7 @@ int main(int argc, char *argv[]){
     /* Main algorithm */
     if(!id){
 		// Master
-		master();
+		master(ncl, nvar);
 
 		fprintf(f_out, "%d %d\n", op->max, op->nMax);
 		if(DEBUG)
@@ -388,10 +428,10 @@ int main(int argc, char *argv[]){
 
 	 }else{
 		// Slaves
-		slave();
+		slave(id, ncl, nvar, cls, op);
 	}
 
-    delete_node(btree);
+//    delete_node(btree);
 
     free(cls[0]);
     free(cls);

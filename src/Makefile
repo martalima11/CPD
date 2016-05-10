@@ -129,14 +129,17 @@ openmp_all: openmp
 
 	@echo "DONE thank you for your patience"
 
-mpi: maxsat-mpi.c maxsat.o
-	mpicc -o maxsat-mpi maxsat-mpi -Wall -lm -g
+mpi: maxsat-mpi.c maxsat.o task.o
+	mpicc -o maxsat-mpi $^ -Wall -lm -g
 
 mpi_run: mpi
 	mpirun -np 4 maxsat-mpi ./data/$(input)
 
 maxsat.o: maxsat.c maxsat.h
 	gcc -c -o maxsat.o maxsat.c -Wall -lm
+
+task.o: task.c task.h
+	gcc -c -o task.o task.c -Wall -lm
 
 clean:
 	@rm -f *.o
