@@ -23,7 +23,7 @@ typedef struct node {
     int *vars, *cls_evals;
 } node;
 
-node *create_node(int Mc, int mc, int level, int ncl, node *father);
+node *create_node(int Mc, int mc, int level, int ncl, node * father);
 void delete_node(node *ptr);
 void set_path(output *op, node *ptr, int len);
 

@@ -1,15 +1,14 @@
 #ifndef __TASK_H__
 #define __TASK_H__
 
-/* Task:
- * Index	- Value - Size
- * 
- * 0		- Mc 	- 1
- * 1		- mc	- 1
- * 2		- level	- 1
- * 3		- vars	- nvar (ends in 0)
- *  
- * */
+#define TASK_Mc    0
+#define TASK_mc    1
+#define TASK_level 2
+
+#define TASK_max  0
+#define TASK_nmax 1
+
+#define TASK_vars 3
 
 typedef struct _task_pool{
 	int * task;
