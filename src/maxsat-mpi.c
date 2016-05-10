@@ -39,50 +39,59 @@ void updateTask(int * task, output * op, int nvar){
 	return;
 }
 
+void updateMax(output * op, int * buffer){
+	
+	if(buffer[TASK_max] == op->max){
+		op->nMax += buffer[TASK_nmax];
+	}else if(buffer[TASK_max] > op->max){
+		op->max = ptr->Mc;
+		op->nMax = pow(2, (nvar - ptr->level));
+		// TODO: Memecopy
+		set_path(op, , nvar);
+	}
+}
 /* Recursive function used to generate the intended results */
 void solve(node *ptr, int nvar, int **cls, int ncl, output * op, int first){
     int i, j, res;
-	if(!first){
-		for(i = 0; i < ncl; i++){
-            /* Initializes the position based on father node */
-            ptr->cls_evals[i] = ptr->u->cls_evals[i];
+	int *task;
+	
+	for(i = 0; i < ncl; i++){
+		/* Initializes the position based on father node */
+		if(!first)
+			ptr->cls_evals[i] = ptr->u->cls_evals[i];
 
-            /* The clause only needs to be evaluated
-            in case there is still no veredict about it */
-            if(!ptr->u->cls_evals[i]){
+		/* The clause only needs to be evaluated
+		in case there is still no veredict about it */
+		if(!ptr->cls_evals[i]){
 
-                /* The clauses' variables are comparared
-                 up to the present level */
-                for(j = 0; cls[i][j] && abs(cls[i][j]) <= ptr->level; j++){
+			/* The clauses' variables are comparared
+			 up to the present level */
+			for(j = 0; cls[i][j] && abs(cls[i][j]) <= ptr->level; j++){
 
-                    /* The result of the variable atribuition
-                    is calculated, for the current clause */
-                    res = cls[i][j] + ptr->vars[abs(cls[i][j])-1];
+				/* The result of the variable atribuition
+				is calculated, for the current clause */
+				res = cls[i][j] + ptr->vars[abs(cls[i][j])-1];
 
-                    /* If the result is 0, then the values are symmetric so
-                    there can be no conclusion (about this variable).
-                    Otherwise (res != 0), the clause can be evaluated as true
-                    and will no longer be evaluated. */
-                    if(res){
-                        ptr->cls_evals[i] = 1;
-                        ptr->mc++;
-                        break;
-                    }
-                }
-                /* If the clause has no more variables to be evaluated and
-                it still has no solution, then the clause is evaluated as false */
-                if(!cls[i][j] && !ptr->cls_evals[i]){
-                    ptr->cls_evals[i] = -1;
-                    ptr->Mc--;
-                }
-            }
-		}
-    } else{
-		/* The first node is initialized */
-		for(i = 0; i < ncl; i++){
-			ptr->cls_evals[i] = 0;
+				/* If the result is 0, then the values are symmetric so
+				there can be no conclusion (about this variable).
+				Otherwise (res != 0), the clause can be evaluated as true
+				and will no longer be evaluated. */
+				if(res){
+					ptr->cls_evals[i] = 1;
+					ptr->mc++;
+					break;
+				}
+			}
+			/* If the clause has no more variables to be evaluated and
+			it still has no solution, then the clause is evaluated as false */
+			if(!cls[i][j] && !ptr->cls_evals[i]){
+				ptr->cls_evals[i] = -1;
+				ptr->Mc--;
+			}
 		}
 	}
+
+	
 
     /* After calculation on the current node */
     /* For debug purposes, it's possible to know the
@@ -106,30 +115,43 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output * op, int first){
             set_path(op, ptr, nvar);
         }
     }else if(ptr->level < nvar && op->max <= ptr->Mc){
-        ptr->l = create_node(ptr->Mc, ptr->mc, ptr->level+1, ncl, ptr);
+        if(!first) ptr->l = create_node(ptr->Mc, ptr->mc, ptr->level+1, ncl, ptr);
+        else {
+			task = (int *) malloc((nvar+3)*sizeof(int));
+			task[TASK_Mc] = ptr->Mc;
+			task[TASK_mc] = ptr->mc;
+			task[TASK_level] = ptr->level + 1;
+		}
         ptr->r = create_node(ptr->Mc, ptr->mc, ptr->level+1, ncl, ptr);
 
         for(i = 0; i < ptr->level; i++){
-            ptr->l->vars[i] = ptr->vars[i];
+            if(!first) ptr->l->vars[i] = ptr->vars[i];
+            else task[TASK_vars+i] = ptr->vars[i];
             ptr->r->vars[i] = ptr->vars[i];
         }
+      
 
-        ptr->l->vars[ptr->level] = -(ptr->level + 1);
-        ptr->r->vars[ptr->level] =  (ptr->level + 1);
-
+		if(!first){
+			ptr->l->vars[ptr->level] = -(ptr->level + 1);
+			solve(ptr->l, nvar, cls, ncl, op, 0);
+			delete_node(ptr->l);
+		} else {
+			task[TASK_vars + ptr->level] = -(ptr->level + 1);
+			printf("Saving first born from evil twin\n");
+			MPI_Send((void *) task, nvar+3, MPI_INT, 0, TASK_TAG, MPI_COMM_WORLD);
+			free(task);
+		}
 		
-        solve(ptr->l, nvar, cls, ncl, op, 0);
-        /**/
+        ptr->r->vars[ptr->level] =  (ptr->level + 1);
         solve(ptr->r, nvar, cls, ncl, op, 0);
-
-        delete_node(ptr->l);
         delete_node(ptr->r);
+        
     }
     return;
 }
 
 
-void master(int ncls, int nvar){
+void master(int ncls, int nvar, output * op){
 	int nproc, init_level, task_size, path_size;
 	int i, j, p;
 	int * buffer;
@@ -195,6 +217,7 @@ void master(int ncls, int nvar){
 				}
 				break;
 			case STOP_TAG:
+				printf("ROOT working on received task from #%d\n", status.MPI_SOURCE);
 				switch(get_task(tpool, buffer)){
 					case(-1):
 						/* processador 1 indexado na posição 0, pois o main não conta para o vector */
@@ -405,7 +428,7 @@ int main(int argc, char *argv[]){
     /* Main algorithm */
     if(!id){
 		// Master
-		master(ncl, nvar);
+		master(ncl, nvar, op);
 
 		fprintf(f_out, "%d %d\n", op->max, op->nMax);
 		if(DEBUG)
