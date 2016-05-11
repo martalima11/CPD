@@ -21,8 +21,8 @@ typedef struct _task_pool{
 	struct _task_pool * next;
 } * task_pool;
 
-void insert_task(task_pool tpool, int * task);
-int get_task(task_pool tpool, int * buff);
+void insert_task(task_pool *tpool, int * task, int task_size);
+int get_task(task_pool *tpool, int * buff, int task_size);
  
 #endif
 
