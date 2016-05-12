@@ -56,7 +56,7 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output * op, int first){
     int i, j, res;
 	int *task;
 	int task_size = nvar +3;
-	
+
 	for(i = 0; i < ncl; i++){
 		/* Initializes the position based on father node */
 		if(!first)
@@ -123,7 +123,7 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output * op, int first){
 
 			ptr->r->vars[i] = ptr->vars[i];
         }
-        
+
 		if(!first){
 			ptr->l->vars[ptr->level] = -(ptr->level + 1);
 			solve(ptr->l, nvar, cls, ncl, op, 0);
@@ -221,7 +221,7 @@ void master(int ncls, int nvar, output * op){
 				 * and discard tasks with possible maximums (Mc) lower than
 				 * op->max */
 
-				switch(get_task(&tpool, buffer, task_size)){
+				switch(get_task(&tpool, buffer, task_size, op->max)){
 					case(-1):
 						/* processador 1 indexado na posição 0, pois o main não conta para o vector */
 						proc_queue[status.MPI_SOURCE - 1] = 0;
@@ -266,7 +266,7 @@ void slave(int id, int ncl, int nvar, int ** cls, output * op){
 
 	/* Allocate task */
 	task_size = nvar + 3;
-	
+
 	task = (int *) malloc(task_size * sizeof(int));
 
 	while(1){
@@ -274,7 +274,7 @@ void slave(int id, int ncl, int nvar, int ** cls, output * op){
 		if(DEBUG)
 			printf("Process #%d Receiving\n", id);
 		MPI_Recv(task, task_size, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-		
+
 		/* Clean exit */
 		if(status.MPI_TAG == STOP_TAG){
 			free(task);
@@ -382,14 +382,14 @@ int main(int argc, char *argv[]){
 		}
 
 	}
-	
+
 	/* Node 0 sends #variables and #clauses to all processors */
 	MPI_Bcast(data_size, 2, MPI_INT, 0, MPI_COMM_WORLD);
 	if(id){
 		nvar = data_size[0];
 		ncl = data_size[1];
 	}
-	
+
     /* Data structure initialization for all processors */
     /* Vector with pointers to vector with all clauses */
     cls = (int**) malloc(ncl*sizeof(int*));
@@ -431,7 +431,7 @@ int main(int argc, char *argv[]){
 	op->path = (int*) malloc(nvar * sizeof(int));
 	op->max = -1;
 	op->nMax = 0;
-	
+
     /* Main algorithm */
     if(!id){
 		// Master

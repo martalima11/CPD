@@ -9,7 +9,7 @@ void insert_task(task_pool *tpool, int * task, int task_size){
 		for(i=0;i<task_size; i++)
 			(*tpool)->task[i] = task[i];
 		(*tpool)->next = NULL;
-		
+
 		return;
 	}
 	/* Ordered insertion */
@@ -26,25 +26,24 @@ void insert_task(task_pool *tpool, int * task, int task_size){
 		new_tpool->task[i] = task[i];
 	new_tpool->next = aux->next;
 	aux->next = new_tpool;
-	
+
 	return;
 }
 
-int get_task(task_pool *tpool, int *buff, int task_size){
+int get_task(task_pool *tpool, int *buff, int task_size, int max){
 	task_pool aux;
-	int i;
-	if((*tpool) == NULL)
-		return -1;
-	else{
-		for(i=0;i<task_size; i++)
-			buff[i] = (*tpool)->task[i];
-		
-		aux = (*tpool);
-		(*tpool) = (*tpool)->next;
-		free(aux->task);
-		free(aux);
-		
-		return 0;
+	int i = 0;
+	while((*tpool) != NULL){
+		if((*tpool)->task[TASK_Mc] >= max)
+			for(i = 0; i < task_size; i++)
+				buff[i] = (*tpool)->task[i];
+		if(!i){
+			aux = (*tpool);
+			(*tpool) = (*tpool)->next;
+			free(aux->task);
+			free(aux);
+			return 0;
+		}
 	}
+	return -1;
 }
-
