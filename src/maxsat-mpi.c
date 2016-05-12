@@ -185,8 +185,10 @@ void master(int ncl, int nvar, int ** cls, output * op){
 	MPI_Status status;
 
 	MPI_Comm_size(MPI_COMM_WORLD, &nproc);
-
-	if(nproc > 1){
+	
+	omp_set_num_threads(4);
+	
+	if(nproc > 1){	
 		#pragma omp parallel
 			#pragma omp single
 			{
