@@ -195,66 +195,73 @@ void master(int ncl, int nvar, int ** cls, output * op){
 			}
 		}
 
-		while(!stop){
-			if(DEBUG)
-				printf("ROOT Receiving\n");
-			MPI_Recv(buffer, task_size, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+		#pragma omp parallel
+			#pragma omp single
+			{
+			while(!stop){
+				if(DEBUG)
+					printf("ROOT Receiving\n");
+				MPI_Recv(buffer, task_size, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-			switch(status.MPI_TAG){
-				case TASK_TAG:
-					p = get_proc(proc_queue, nproc - 1);
-					if(p == -1){
-						insert_task(&tpool, buffer, task_size);
-					}else{
-						// check which is the task that it should send
-						if(DEBUG)
-							printf("ROOT sends work to process #%d\n", p + 1);
-						MPI_Send((void *) buffer, task_size, MPI_INT, p + 1, TASK_TAG, MPI_COMM_WORLD);
-						proc_queue[p] = 1;
-					}
-					break;
-				case STOP_TAG:
-					if(DEBUG)
-						printf("ROOT working on received task from #%d\n", status.MPI_SOURCE);
-					updateMax(op, buffer, nvar);
-
-					/* Somewhere around here the master should evaluate the task queue
-					 * and discard tasks with possible maximums (Mc) lower than
-					 * op->max */
-
-					switch(get_task(&tpool, buffer, task_size, op->max)){
-						case(-1):
-							/* processador 1 indexado na posição 0, pois o main não conta para o vector */
-							proc_queue[status.MPI_SOURCE - 1] = 0;
-							break;
-						case(0):
+				switch(status.MPI_TAG){
+					case TASK_TAG:
+						p = get_proc(proc_queue, nproc - 1);
+						if(p == -1){
+							insert_task(&tpool, buffer, task_size);
+						}else{
+							// check which is the task that it should send
 							if(DEBUG)
-								printf("ROOT sends work to process #%d\n", status.MPI_SOURCE);
-							MPI_Send((void *) buffer, task_size, MPI_INT, status.MPI_SOURCE, TASK_TAG, MPI_COMM_WORLD);
-							break;
-						default:
-							/* Just in case */
-							break;
+								printf("ROOT sends work to process #%d\n", p + 1);
+							MPI_Send((void *) buffer, task_size, MPI_INT, p + 1, TASK_TAG, MPI_COMM_WORLD);
+							proc_queue[p] = 1;
 						}
-					break;
-				default:
-					/* Just in case */
-					break;
-			}
-			if(check_empty(proc_queue, nproc - 1)){
-				stop = 1;
-			}
-		}
-		for(i = 0; i < nproc - 1; i++){
-			if(DEBUG)
-				printf("Sending 'STOP' to process #%d from ROOT\n", i+1);
-			MPI_Send((void *) buffer, task_size, MPI_INT, i + 1, STOP_TAG, MPI_COMM_WORLD);
-		}
+						break;
+					case STOP_TAG:
+						if(DEBUG)
+							printf("ROOT working on received task from #%d\n", status.MPI_SOURCE);
+						
+						// ****************** op is shared ******************
+						updateMax(op, buffer, nvar);
 
-		/* Memory Clean-Up */
-		free(proc_queue);
-		free(buffer);
+						/* Somewhere around here the master should evaluate the task queue
+						 * and discard tasks with possible maximums (Mc) lower than
+						 * op->max */
 
+						switch(get_task(&tpool, buffer, task_size, op->max)){ // ************* op is shared *********
+							case(-1):
+								/* processador 1 indexado na posição 0, pois o main não conta para o vector */
+								proc_queue[status.MPI_SOURCE - 1] = 0;
+								break;
+							case(0):
+								if(DEBUG)
+									printf("ROOT sends work to process #%d\n", status.MPI_SOURCE);
+								MPI_Send((void *) buffer, task_size, MPI_INT, status.MPI_SOURCE, TASK_TAG, MPI_COMM_WORLD);
+								break;
+							default:
+								/* Just in case */
+								break;
+							}
+						break;
+					default:
+						/* Just in case */
+						break;
+				}
+				if(check_empty(proc_queue, nproc - 1)){
+					stop = 1;
+				}
+			} //end while
+			for(i = 0; i < nproc - 1; i++){
+				if(DEBUG)
+					printf("Sending 'STOP' to process #%d from ROOT\n", i+1);
+				MPI_Send((void *) buffer, task_size, MPI_INT, i + 1, STOP_TAG, MPI_COMM_WORLD);
+			}
+		
+			/* Memory Clean-Up */
+			free(proc_queue);
+			free(buffer);
+		} // pragma single
+		
+		
 	}else{	
 		// There is only one processor
 		node * btree;
