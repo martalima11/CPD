@@ -34,16 +34,19 @@ int get_task(task_pool *tpool, int *buff, int task_size, int max){
 	task_pool aux;
 	int i = 0;
 	while((*tpool) != NULL){
-		if((*tpool)->task[TASK_Mc] >= max)
+		if((*tpool)->task[TASK_Mc] >= max){ // if task has a maximum worth calculating
 			for(i = 0; i < task_size; i++)
 				buff[i] = (*tpool)->task[i];
-		if(!i){
-			aux = (*tpool);
-			(*tpool) = (*tpool)->next;
-			free(aux->task);
-			free(aux);
-			return 0;
 		}
+		
+		aux = (*tpool);
+		(*tpool) = (*tpool)->next;
+		free(aux->task);
+		free(aux);
+		
+		if(i) return 0;
 	}
+
 	return -1;
 }
+

@@ -134,6 +134,9 @@ mpi: maxsat-mpi.c maxsat.o task.o
 
 mpi_run: mpi
 	mpirun -np 4 maxsat-mpi ./data/$(input)
+	
+mpi_run_dist: mpi
+	mpirun -mca plm_rsh_agent /usr/local/bin/rnlssh --host lab13p1,lab13p2,lab13p4,lab13p5 maxsat-mpi ./data/$(input) 
 
 maxsat.o: maxsat.c maxsat.h
 	gcc -c -o maxsat.o maxsat.c -Wall -lm
