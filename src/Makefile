@@ -133,10 +133,10 @@ mpi: maxsat-mpi.c maxsat.o task.o
 	mpicc -o maxsat-mpi $^ -Wall -lm -g
 
 mpi_run: mpi
-	mpirun -np 1 maxsat-mpi ./data/$(input)
-	
+	mpirun -np 4 maxsat-mpi ./data/$(input)
+
 mpi_run_dist: mpi
-	mpirun -mca plm_rsh_agent /usr/local/bin/rnlssh --host lab13p1,lab13p2,lab13p4,lab13p5 maxsat-mpi ./data/$(input) 
+	mpirun -mca plm_rsh_agent /usr/local/bin/rnlssh --host lab13p1,lab13p2,lab13p4,lab13p5 maxsat-mpi ./data/$(input)
 
 maxsat.o: maxsat.c maxsat.h
 	gcc -c -o maxsat.o maxsat.c -Wall -lm
@@ -146,6 +146,6 @@ task.o: task.c task.h
 
 clean:
 	@rm -f *.o
-	@rm -f maxsat-serial maxsat-openmp maxsat-mpi 
+	@rm -f maxsat-serial maxsat-openmp maxsat-mpi
 	@rm -f data/*.out
 	@echo "Done!"
