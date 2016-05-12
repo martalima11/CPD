@@ -8,6 +8,7 @@
 #define TASK_TAG 0
 #define STOP_TAG 1
 
+/* Function used to check if tasks ended */
 int check_empty(int *proc_queue, int queue_size){
 	int i;
 	for(i = 0; i < queue_size && !proc_queue[i]; i++);
@@ -18,6 +19,7 @@ int check_empty(int *proc_queue, int queue_size){
 	}
 }
 
+/* Function used to get idle processor from processor queue */
 int get_proc(int *proc_queue, int queue_size){
 	int i;
 	for(i = 0; i < queue_size && proc_queue[i]; i++);
@@ -38,6 +40,7 @@ void updateTask(int * task, output * op, int nvar){
 	return;
 }
 
+/* Function used to update global maximum based on task results [buffer] */
 void updateMax(output * op, int * buffer, int path_size){
 	int i;
 	if(buffer[TASK_max] == op->max){

@@ -1,5 +1,7 @@
 #include "task.h"
 
+/* Function used to insert a task on the list
+ * Inserts tasks ordered by possible calculated maximum */
 void insert_task(task_pool *tpool, int * task, int task_size){
 	task_pool aux, new_tpool;
 	int i;
@@ -30,6 +32,8 @@ void insert_task(task_pool *tpool, int * task, int task_size){
 	return;
 }
 
+/* Function used to get task from the list
+ * The task is then removed from memory */
 int get_task(task_pool *tpool, int *buff, int task_size, int max){
 	task_pool aux;
 	int i = 0;
@@ -38,15 +42,14 @@ int get_task(task_pool *tpool, int *buff, int task_size, int max){
 			for(i = 0; i < task_size; i++)
 				buff[i] = (*tpool)->task[i];
 		}
-		
+
 		aux = (*tpool);
 		(*tpool) = (*tpool)->next;
 		free(aux->task);
 		free(aux);
-		
+
 		if(i) return 0;
 	}
 
 	return -1;
 }
-
