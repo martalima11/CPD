@@ -141,7 +141,12 @@ mpi_run_dist: mpi
 	mpirun -mca plm_rsh_agent /usr/local/bin/rnlssh --host lab13p1,lab13p2,lab13p4,lab13p5 maxsat-mpi ./data/$(input)
 
 mpi_condor: mpi
-	condor_mpi -n $(nproc) $$(pwd)/maxsat-mpi $$(pwd)/data/$(input)   
+	condor_mpi -n $(nproc) $$(pwd)/maxsat-mpi $$(pwd)/data/$(input) 
+	
+mpi_condor_all: mpi
+	@for I in $(inputs); do \
+	condor_mpi -n $(nproc) $$(pwd)/maxsat-mpi $$(pwd)/data/$$I \
+	done;
 
 maxsat.o: maxsat.c maxsat.h
 	gcc -c -o maxsat.o maxsat.c -Wall -lm
