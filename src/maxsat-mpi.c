@@ -54,9 +54,13 @@ void updateMax(output * op, int * buffer, int path_size){
 	}else if(buffer[TASK_max] > op->max){
 		op->max = buffer[TASK_max];
 		op->nMax = buffer[TASK_nmax];
+		
+		printf("UM\t ");
 		for(i = 0; i < path_size; i++){
 			 op->path[i] = buffer[TASK_maxpath + i];
+			 printf("%d ", op->path[i]);
 		}
+		printf("\n");
 	}
 	
 }
