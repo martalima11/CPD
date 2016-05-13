@@ -275,6 +275,8 @@ void master(int ncl, int nvar, int ** cls, output * op){
 							
 							printf("master_task: Mc: %d; mc: %d; level: %d\n", master_task[0], master_task[1], master_task[2]);
 							printf("buffer: Mc: %d; mc: %d; level: %d\n", buffer[0], buffer[1], buffer[2]);
+							
+							sleep(3);
 							#pragma omp atomic
 								loop--;
 						}else{
