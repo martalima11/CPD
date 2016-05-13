@@ -5,7 +5,7 @@
 #include "task.h"
 
 #define DEBUG 0
-#define LOG 1
+#define LOG 0
 #define TASK_TAG 0
 #define STOP_TAG 1
 
