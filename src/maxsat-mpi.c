@@ -340,9 +340,10 @@ void master(int ncl, int nvar, int ** cls, output * op){
 							/* Just in case */
 							break;
 					}
-					if(check_empty(proc_queue, nproc - 1))
+					if(check_empty(proc_queue, nproc - 1)){
 						stop = 1;
-					
+						loop = 0;
+					}
 				}
 				for(i = 0; i < nproc - 1; i++){
 					if(DEBUG)
@@ -366,7 +367,8 @@ void master(int ncl, int nvar, int ** cls, output * op){
 				
 				while(!stop){
 					while(loop);
-					
+					if(stop)
+						break;
 					if(DEBUG)
 						printf("ROOT working on task.\n");
 						
