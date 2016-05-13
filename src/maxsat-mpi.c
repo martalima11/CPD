@@ -186,12 +186,9 @@ void serial_solve(int * task, int nvar, int ** cls, int ncl, output * op){
 
 	/* Initialize subtrees */
 	btree = create_node(task[TASK_Mc], task[TASK_mc], task[TASK_level], ncl, NULL);
-	for(i = 0; i < nvar; i++){
-		if(i < btree->level)
-			btree->vars[i] = task[TASK_vars + i];
-		else
-			btree->vars[i] = 0;
-	}
+	for(i = 0; i < btree->level; i++)
+		btree->vars[i] = task[TASK_vars + i];
+	
 	for(i = 0; i < ncl; i++)
 		btree->cls_evals[i] = 0;
 	
@@ -378,7 +375,7 @@ void master(int ncl, int nvar, int ** cls, output * op){
 					if(DEBUG)
 						printf("ROOT working on task.\n");
 					
-					print_task(master_task, task_size);
+					print_task(master_task, master_task[TASK_level] + 3);
 					serial_solve(master_task, nvar, cls, ncl, private_op);
 					updateTask(master_task, private_op, nvar);
 					
@@ -389,7 +386,7 @@ void master(int ncl, int nvar, int ** cls, output * op){
 						if(DEBUG)
 							printf("Root-worker updating MAX\n");
 						updateMax(op, master_task, path_size);
-						print_stop(master_task, task_size);
+						print_stop(master_task, master_task[TASK_level] + 3);
 					}
 					if(DEBUG)
 						printf("EXIT CRITICAL_MAX\n");
