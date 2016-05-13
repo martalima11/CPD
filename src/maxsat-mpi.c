@@ -201,6 +201,12 @@ void serial_solve(int * task, int nvar, int ** cls, int ncl, output * op){
 	btree->l->vars[task[TASK_level]] = -(task[TASK_level] + 1);
 	btree->r->vars[task[TASK_level]] =  (task[TASK_level] + 1);
 
+	printf("PRIVATE1 OP --- max: %d; nmax: %d\t", op->max, op->nMax);
+	for(i = 0; i < nvar; i++)
+		printf("%d ", op->path[i]);
+		
+	printf("\n");
+
 	solve(btree->l, nvar, cls, ncl, op, 0);
 	
 	printf("PRIVATE1 OP --- max: %d; nmax: %d\t", op->max, op->nMax);
@@ -340,7 +346,6 @@ void master(int ncl, int nvar, int ** cls, output * op){
 									printf("ROOT updating max props to #%d\n", status.MPI_SOURCE);
 								updateMax(op, buffer, nvar);
 								
-								printf("Max: %d\tnMax: %d\n", op->max, op->nMax);
 							}
 							if(DEBUG)
 								printf("EXIT CRITICAL_MAX\n");
