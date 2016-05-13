@@ -200,8 +200,8 @@ void serial_solve(int * task, int nvar, int ** cls, int ncl, output * op){
 		btree->r->vars[i] = btree->vars[i];
 	}
 
-	btree->l->vars[task[TASK_level]] = -(task[TASK_level] + 1);
-	btree->r->vars[task[TASK_level]] =  (task[TASK_level] + 1);
+	btree->l->vars[btree->level] = -(btree->level + 1);
+	btree->r->vars[btree->level] =  (btree->level + 1);
 
 	solve(btree->l, nvar, cls, ncl, op, 0);
 	solve(btree->r, nvar, cls, ncl, op, 0);
@@ -298,7 +298,7 @@ void master(int ncl, int nvar, int ** cls, output * op){
 									copy_task(master_task, buffer, task_size);
 									#pragma omp atomic
 										loop--;
-								} else {
+								}else{
 									printf("INSERT\t");
 									print_task(buffer, buffer[TASK_level] + 3);
 									insert_task(&tpool, buffer, task_size);
@@ -322,7 +322,7 @@ void master(int ncl, int nvar, int ** cls, output * op){
 									printf("ROOT updating max props to #%d\n", status.MPI_SOURCE);
 								
 								printf("STOP\t");
-								print_task(buffer, task_size);
+								print_stop(buffer, task_size);
 								updateMax(op, buffer, nvar);
 								
 							}
@@ -382,7 +382,8 @@ void master(int ncl, int nvar, int ** cls, output * op){
 					if(DEBUG)
 						printf("ROOT working on task.\n");
 					
-					// print_task(master_task, master_task[TASK_level] + 3);
+					printf("SER1\t");
+					print_task(master_task, master_task[TASK_level] + 3);
 					serial_solve(master_task, nvar, cls, ncl, private_op);
 					updateTask(master_task, private_op, nvar);
 					
@@ -393,7 +394,8 @@ void master(int ncl, int nvar, int ** cls, output * op){
 						if(DEBUG)
 							printf("Root-worker updating MAX\n");
 						updateMax(op, master_task, path_size);
-						// print_stop(master_task, master_task[TASK_level] + 3);
+						printf("SER2\t");
+						print_stop(master_task, master_task[TASK_level] + 3);
 					}
 					if(DEBUG)
 						printf("EXIT CRITICAL_MAX\n");
