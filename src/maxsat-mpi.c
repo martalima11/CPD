@@ -320,7 +320,8 @@ void master(int ncl, int nvar, int ** cls, output * op){
 							{
 								updateMax(op, buffer, nvar);
 							}
-							
+							if(DEBUG)
+								printf("EXIT CRITICAL_MAX\n");
 							switch(get_task(&tpool, buffer, task_size, op->max)){
 								case(-1):
 									/* processador 1 indexado na posição 0, pois o main não conta para o vector */
@@ -382,6 +383,8 @@ void master(int ncl, int nvar, int ** cls, output * op){
 					{
 						updateMax(op, master_task, path_size);
 					}
+					if(DEBUG)
+						printf("EXIT CRITICAL_MAX\n");
 					
 					#pragma omp atomic
 						loop++;			
