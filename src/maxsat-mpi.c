@@ -384,6 +384,7 @@ void master(int ncl, int nvar, int ** cls, output * op){
 					if(DEBUG)
 						printf("ROOT working on task.\n");
 					
+					print_task(master_task, task_size);
 					serial_solve(master_task, nvar, cls, ncl, private_op);
 					updateTask(master_task, private_op, nvar);
 					
