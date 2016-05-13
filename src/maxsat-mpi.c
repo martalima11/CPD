@@ -144,8 +144,8 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output * op, int first){
 
 			/* After setting the path the processor sends the task
 			 * to the master processor */
-			if(DEBUG)
-				printf("Saving first born from evil twin\n");
+			// if(DEBUG)
+			//	printf("Saving first born from evil twin\n");
 			MPI_Send((void *) task, task_size, MPI_INT, 0, TASK_TAG, MPI_COMM_WORLD);
 			free(task);
 
@@ -277,6 +277,7 @@ void master(int ncl, int nvar, int ** cls, output * op){
 								
 							sleep(3);
 						}else{
+							printf("Inserting ^^\n");
 							insert_task(&tpool, buffer, task_size);
 						}
 					}
@@ -298,6 +299,7 @@ void master(int ncl, int nvar, int ** cls, output * op){
 									#pragma omp atomic
 										loop--;
 								} else {
+									printf("Inserting ^^\n");
 									insert_task(&tpool, buffer, task_size);
 								}
 							}else{
@@ -305,14 +307,13 @@ void master(int ncl, int nvar, int ** cls, output * op){
 								if(DEBUG)
 									printf("ROOT sends work to process #%d\n", p + 1);
 
-								#pragma omp critical(CRITICAL_NAME)
-									MPI_Send((void *) buffer, task_size, MPI_INT, p + 1, TASK_TAG, MPI_COMM_WORLD);
+								printf("Processor #%d going to wake now\n", p + 1);
+								MPI_Send((void *) buffer, task_size, MPI_INT, p + 1, TASK_TAG, MPI_COMM_WORLD);
 								
 								proc_queue[p] = 1;
 							}
 							break;
 						case STOP_TAG:
-							
 							if(DEBUG)
 								printf("CRITICAL_MAX\n");
 							#pragma omp critical(CRITICAL_MAX)
@@ -320,12 +321,16 @@ void master(int ncl, int nvar, int ** cls, output * op){
 								if(DEBUG)
 									printf("ROOT updating max props to #%d\n", status.MPI_SOURCE);
 								updateMax(op, buffer, nvar);
+								
+								printf("Max: %d\tnMax: %d\n", op->max, op->nMax);
 							}
 							if(DEBUG)
 								printf("EXIT CRITICAL_MAX\n");
+							
 							switch(get_task(&tpool, buffer, task_size, op->max)){
 								case(-1):
 									/* processador 1 indexado na posição 0, pois o main não conta para o vector */
+									printf("Processor #%d going to sleep now\n", status.MPI_SOURCE);
 									proc_queue[status.MPI_SOURCE - 1] = 0;
 									break;
 								case(0):
@@ -454,8 +459,8 @@ void slave(int id, int ncl, int nvar, int ** cls, output * op){
 		/* Send result */
 		/* update task with op's information */
 		updateTask(task, op, nvar);
-		if(DEBUG)
-			printf("Sending 'STOP' to ROOT from process #%d\n", id);
+		//if(DEBUG)
+			//printf("Sending 'STOP' to ROOT from process #%d\n", id);
 		MPI_Send((void *) task, task_size, MPI_INT, 0, STOP_TAG, MPI_COMM_WORLD);
 		delete_node(btree);
 	}
