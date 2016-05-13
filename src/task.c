@@ -70,3 +70,15 @@ void print_task(int * task, int size){
 	printf("\n");
 }
 
+void print_stop(int * task, int size){
+	int i;
+	
+	printf("max: %d\t", task[0]);
+	printf("nMax: %d\t", task[1]);
+	for(i = 2; i < size; i++){
+		printf("%d ", task[i]);
+	}
+	
+	printf("\n");
+}
+

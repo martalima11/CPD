@@ -286,11 +286,12 @@ void master(int ncl, int nvar, int ** cls, output * op){
 					if(DEBUG)
 						printf("ROOT Receiving\n");
 					MPI_Recv(buffer, task_size, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-					print_task(buffer, task_size);
 					
 					switch(status.MPI_TAG){
 						case TASK_TAG:
 							printf("Received unwanted child from #%d\n", status.MPI_SOURCE);
+							print_task(buffer, task_size);
+							
 							p = get_proc(proc_queue, nproc - 1);
 							if(p == -1){
 								if(loop == 1){
@@ -315,6 +316,9 @@ void master(int ncl, int nvar, int ** cls, output * op){
 							}
 							break;
 						case STOP_TAG:
+							printf("Received STOP from #%d\n", status.MPI_SOURCE);
+							print_stop(buffer, task_size);
+						
 							if(DEBUG)
 								printf("CRITICAL_MAX\n");
 							#pragma omp critical(CRITICAL_MAX)
