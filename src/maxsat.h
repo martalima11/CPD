@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <unistd.h>
 
 #define max(A,B) ((A) >= (B)?(A):(B))
 #define min(A,B) ((A) <= (B)?(A):(B))
