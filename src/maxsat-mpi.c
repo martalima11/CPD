@@ -312,12 +312,13 @@ void master(int ncl, int nvar, int ** cls, output * op){
 							}
 							break;
 						case STOP_TAG:
-							if(DEBUG)
-								printf("ROOT updating max props to #%d\n", status.MPI_SOURCE);
+							
 							if(DEBUG)
 								printf("CRITICAL_MAX\n");
 							#pragma omp critical(CRITICAL_MAX)
 							{
+								if(DEBUG)
+									printf("ROOT updating max props to #%d\n", status.MPI_SOURCE);
 								updateMax(op, buffer, nvar);
 							}
 							if(DEBUG)
@@ -377,10 +378,13 @@ void master(int ncl, int nvar, int ** cls, output * op){
 					
 					serial_solve(master_task, nvar, cls, ncl, private_op);
 					updateTask(master_task, private_op, nvar);
+					
 					if(DEBUG)
 						printf("CRITICAL_MAX\n");
 					#pragma omp critical(CRITICAL_MAX)
 					{
+						if(DEBUG)
+							printf("Root updating MAX\n");
 						updateMax(op, master_task, path_size);
 					}
 					if(DEBUG)
