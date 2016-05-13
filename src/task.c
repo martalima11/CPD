@@ -60,10 +60,10 @@ int get_task(task_pool *tpool, int *buff, int task_size, int max){
 void print_task(int * task, int size){
 	int i;
 	
-	printf("Mc: %d\t", task[0]);
-	printf("mc: %d\t", task[1]);
-	printf("level: %d\t", task[2]);
-	for(i = 3; i < size; i++){
+	printf("Mc: %d\t", task[TASK_Mc]);
+	printf("mc: %d\t", task[TASK_mc]);
+	printf("level: %d\t", task[TASK_level]);
+	for(i = TASK_vars; i < size; i++){
 		printf("%d ", task[i]);
 	}
 	
@@ -73,9 +73,9 @@ void print_task(int * task, int size){
 void print_stop(int * task, int size){
 	int i;
 	
-	printf("max: %d\t", task[0]);
-	printf("nMax: %d\t", task[1]);
-	for(i = 2; i < size; i++){
+	printf("max: %d\t", task[TASK_max]);
+	printf("nMax: %d\t", task[TASK_nmax]);
+	for(i = TASK_maxpath; i < size; i++){
 		printf("%d ", task[i]);
 	}
 	
