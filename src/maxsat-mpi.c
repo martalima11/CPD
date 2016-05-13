@@ -186,8 +186,11 @@ void serial_solve(int * task, int nvar, int ** cls, int ncl, output * op){
 
 	/* Initialize subtrees */
 	btree = create_node(task[TASK_Mc], task[TASK_mc], task[TASK_level], ncl, NULL);
-	for(i = 0; i < btree->level; i++){
-		btree->vars[i] = task[TASK_vars + i];
+	for(i = 0; i < nvar; i++){
+		if(i < btree->level)
+			btree->vars[i] = task[TASK_vars + i];
+		else
+			btree->vars[i] = 0;
 	}
 	for(i = 0; i < ncl; i++)
 		btree->cls_evals[i] = 0;
