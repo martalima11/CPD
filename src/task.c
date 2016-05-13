@@ -8,8 +8,7 @@ void insert_task(task_pool *tpool, int * task, int task_size){
 	if((*tpool) == NULL){
 		(*tpool) = (task_pool) malloc(sizeof(struct _task_pool));
 		(*tpool)->task = (int *) malloc(task_size*sizeof(int));
-		for(i=0;i<task_size; i++)
-			(*tpool)->task[i] = task[i];
+		copy_task((*tpool)->task, task, task_size);
 		(*tpool)->next = NULL;
 
 		return;
@@ -24,12 +23,17 @@ void insert_task(task_pool *tpool, int * task, int task_size){
 
 	new_tpool = (task_pool) malloc(sizeof(struct _task_pool));
 	new_tpool->task = (int *) malloc(task_size*sizeof(int));
-	for(i=0;i<task_size; i++)
-		new_tpool->task[i] = task[i];
+	copy_task(new_tpool->task, task, task_size);
 	new_tpool->next = aux->next;
 	aux->next = new_tpool;
 
 	return;
+}
+
+void copy_task(int *dst, int *src, int size){
+	int i;
+	for(i=0;i<size; i++)
+		dst[i] = src[i];
 }
 
 /* Function used to get task from the list
@@ -39,8 +43,7 @@ int get_task(task_pool *tpool, int *buff, int task_size, int max){
 	int i = 0;
 	while((*tpool) != NULL){
 		if((*tpool)->task[TASK_Mc] >= max){ // if task has a maximum worth calculating
-			for(i = 0; i < task_size; i++)
-				buff[i] = (*tpool)->task[i];
+			copy_task(buff, (*tpool)->task, task_size);
 		}
 
 		aux = (*tpool);

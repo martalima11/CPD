@@ -22,5 +22,6 @@ typedef struct _task_pool{
 
 void insert_task(task_pool *tpool, int * task, int task_size);
 int get_task(task_pool *tpool, int * buff, int task_size, int max);
+void copy_task(int *dst, int *src, int size);
 
 #endif

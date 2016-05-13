@@ -130,7 +130,7 @@ openmp_all: openmp
 	@echo "DONE thank you for your patience"
 
 mpi: maxsat-mpi.c maxsat.o task.o
-	mpicc -o maxsat-mpi $^ -Wall -lm -g fopenmp
+	mpicc -o maxsat-mpi $^ -Wall -lm -g -fopenmp
 
 mpi_run: mpi
 	mpirun -np 4 maxsat-mpi ./data/$(input)
