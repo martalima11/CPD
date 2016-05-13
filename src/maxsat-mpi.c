@@ -284,7 +284,8 @@ void master(int ncl, int nvar, int ** cls, output * op){
 					if(DEBUG)
 						printf("ROOT Receiving\n");
 					MPI_Recv(buffer, task_size, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-
+					print_task(buffer, task_size);
+					
 					switch(status.MPI_TAG){
 						case TASK_TAG:
 							printf("Received unwanted child from #%d\n", status.MPI_SOURCE);
@@ -385,11 +386,13 @@ void master(int ncl, int nvar, int ** cls, output * op){
 					#pragma omp critical(CRITICAL_MAX)
 					{
 						if(DEBUG)
-							printf("Root updating MAX\n");
+							printf("Root-worker updating MAX\n");
 						updateMax(op, master_task, path_size);
 					}
 					if(DEBUG)
 						printf("EXIT CRITICAL_MAX\n");
+					
+					print_task(master_task, task_size);
 					
 					#pragma omp atomic
 						loop++;			

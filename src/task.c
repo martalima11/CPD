@@ -56,3 +56,17 @@ int get_task(task_pool *tpool, int *buff, int task_size, int max){
 
 	return -1;
 }
+
+void print_task(int * task, int size){
+	int i;
+	
+	printf("Mc: %d\t", task[0]);
+	printf("mc: %d\t", task[1]);
+	printf("level: %d\t", task[2]);
+	for(i = 3; i < size; i++){
+		printf("%d ", task[i]);
+	}
+	
+	printf("\n");
+}
+
