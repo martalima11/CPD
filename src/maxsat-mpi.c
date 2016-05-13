@@ -267,18 +267,15 @@ void master(int ncl, int nvar, int ** cls, output * op){
 						if(loop == 1){
 							if(DEBUG)
 								printf("I'll handle it!\n");
-							
-							printf("master_task: Mc: %d; mc: %d; level: %d\n", master_task[0], master_task[1], master_task[2]);
-							printf("buffer: Mc: %d; mc: %d; level: %d\n", buffer[0], buffer[1], buffer[2]); 
-							
+						
 							copy_task(master_task, buffer, task_size);
 							
 							printf("master_task: Mc: %d; mc: %d; level: %d\n", master_task[0], master_task[1], master_task[2]);
-							printf("buffer: Mc: %d; mc: %d; level: %d\n", buffer[0], buffer[1], buffer[2]);
 							
-							sleep(3);
 							#pragma omp atomic
 								loop--;
+								
+							sleep(3);
 						}else{
 							insert_task(&tpool, buffer, task_size);
 						}
@@ -372,6 +369,9 @@ void master(int ncl, int nvar, int ** cls, output * op){
 					
 					if(DEBUG)
 						printf("ROOT working on task.\n");
+						
+					printf("master_task: Mc: %d; mc: %d; level: %d\n", master_task[0], master_task[1], master_task[2]);
+					
 					serial_solve(master_task, nvar, cls, ncl, private_op);
 					updateTask(master_task, private_op, nvar);
 					if(DEBUG)
