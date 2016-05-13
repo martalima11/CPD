@@ -4,7 +4,7 @@
 #include "maxsat.h"
 #include "task.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #define TASK_TAG 0
 #define STOP_TAG 1
 
@@ -191,9 +191,6 @@ void serial_solve(int * task, int nvar, int ** cls, int ncl, output * op){
 	}
 	for(i = 0; i < ncl; i++)
 		btree->cls_evals[i] = 0;
-
-	printf("serial solve  L: %d          ", task[TASK_level]);
-	print_task(task, task[TASK_level] + TASK_vars);
 	
 	btree->l = create_node(task[TASK_Mc], task[TASK_mc], task[TASK_level] + 1, ncl, btree);
 	btree->r = create_node(task[TASK_Mc], task[TASK_mc], task[TASK_level] + 1, ncl, btree);
@@ -206,27 +203,8 @@ void serial_solve(int * task, int nvar, int ** cls, int ncl, output * op){
 	btree->l->vars[task[TASK_level]] = -(task[TASK_level] + 1);
 	btree->r->vars[task[TASK_level]] =  (task[TASK_level] + 1);
 
-	printf("PRIVATE1 OP --- max: %d; nmax: %d\t", op->max, op->nMax);
-	for(i = 0; i < nvar; i++)
-		printf("%d ", op->path[i]);
-		
-	printf("\n");
-
 	solve(btree->l, nvar, cls, ncl, op, 0);
-	
-	printf("PRIVATE1 OP --- max: %d; nmax: %d\t", op->max, op->nMax);
-	for(i = 0; i < nvar; i++)
-		printf("%d ", op->path[i]);
-		
-	printf("\n");
-	
 	solve(btree->r, nvar, cls, ncl, op, 0);
-	
-	printf("PRIVATE2 OP --- max: %d; nmax: %d\t", op->max, op->nMax);
-	for(i = 0; i < nvar; i++)
-		printf("%d ", op->path[i]);
-		
-	printf("\n"); 
 
 	delete_node(btree->l);
 	delete_node(btree->r);
@@ -300,7 +278,6 @@ void master(int ncl, int nvar, int ** cls, output * op){
 								loop--;
 								
 						}else{
-							printf("Inserting ^^\n");
 							insert_task(&tpool, buffer, task_size);
 						}
 					}
@@ -313,9 +290,6 @@ void master(int ncl, int nvar, int ** cls, output * op){
 					
 					switch(status.MPI_TAG){
 						case TASK_TAG:
-							printf("Received unwanted child from #%d\n", status.MPI_SOURCE);
-							print_task(buffer, task_size);
-							
 							p = get_proc(proc_queue, nproc - 1);
 							if(p == -1){
 								if(loop == 1){
@@ -325,7 +299,6 @@ void master(int ncl, int nvar, int ** cls, output * op){
 									#pragma omp atomic
 										loop--;
 								} else {
-									printf("Inserting ^^\n");
 									insert_task(&tpool, buffer, task_size);
 								}
 							}else{
@@ -333,16 +306,12 @@ void master(int ncl, int nvar, int ** cls, output * op){
 								if(DEBUG)
 									printf("ROOT sends work to process #%d\n", p + 1);
 
-								printf("Processor #%d going to wake now\n", p + 1);
 								MPI_Send((void *) buffer, task_size, MPI_INT, p + 1, TASK_TAG, MPI_COMM_WORLD);
 								
 								proc_queue[p] = 1;
 							}
 							break;
 						case STOP_TAG:
-							printf("Received STOP from #%d\n", status.MPI_SOURCE);
-							print_stop(buffer, task_size);
-						
 							if(DEBUG)
 								printf("CRITICAL_MAX\n");
 							#pragma omp critical(CRITICAL_MAX)
@@ -358,7 +327,6 @@ void master(int ncl, int nvar, int ** cls, output * op){
 							switch(get_task(&tpool, buffer, task_size, op->max)){
 								case(-1):
 									/* processador 1 indexado na posição 0, pois o main não conta para o vector */
-									printf("Processor #%d going to sleep now\n", status.MPI_SOURCE);
 									proc_queue[status.MPI_SOURCE - 1] = 0;
 									break;
 								case(0):
@@ -390,10 +358,10 @@ void master(int ncl, int nvar, int ** cls, output * op){
 				free(proc_queue);
 				free(buffer);
 			} // close omp master [communication]
-			/* private output structure*/
 			
 			#pragma omp single
 			{
+				/* private output structure*/
 				output * private_op;
 				private_op = (output*) malloc(sizeof(output));
 				private_op->path = (int*) malloc(nvar * sizeof(int));
@@ -407,7 +375,6 @@ void master(int ncl, int nvar, int ** cls, output * op){
 					if(DEBUG)
 						printf("ROOT working on task.\n");
 					
-					print_task(master_task, task_size);
 					serial_solve(master_task, nvar, cls, ncl, private_op);
 					updateTask(master_task, private_op, nvar);
 					
@@ -418,7 +385,6 @@ void master(int ncl, int nvar, int ** cls, output * op){
 						if(DEBUG)
 							printf("Root-worker updating MAX\n");
 						updateMax(op, master_task, path_size);
-						print_task(master_task, task_size);
 					}
 					if(DEBUG)
 						printf("EXIT CRITICAL_MAX\n");
@@ -464,7 +430,6 @@ void slave(int id, int ncl, int nvar, int ** cls, output * op){
 			printf("Process #%d Receiving\n", id);
 		MPI_Recv(task, task_size, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-		sleep(2);
 		/* Clean exit */
 		if(status.MPI_TAG == STOP_TAG){
 			free(task);
@@ -489,8 +454,8 @@ void slave(int id, int ncl, int nvar, int ** cls, output * op){
 		/* Send result */
 		/* update task with op's information */
 		updateTask(task, op, nvar);
-		//if(DEBUG)
-			//printf("Sending 'STOP' to ROOT from process #%d\n", id);
+		if(DEBUG)
+			printf("Sending 'STOP' to ROOT from process #%d\n", id);
 		MPI_Send((void *) task, task_size, MPI_INT, 0, STOP_TAG, MPI_COMM_WORLD);
 		delete_node(btree);
 	}
