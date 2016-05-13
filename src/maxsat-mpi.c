@@ -257,7 +257,7 @@ void master(int ncl, int nvar, int ** cls, output * op){
 							buffer[j] = 2 - j;
 						}
 					}
-					if( i < nproc - 1 ){
+					if(i < nproc - 1){
 						/* começa a enviar para o processador 1, pois o 0 é o main */
 						if(DEBUG)
 							printf("Sending 'TASK' to process #%d from ROOT\n", i + 1);
@@ -265,10 +265,19 @@ void master(int ncl, int nvar, int ** cls, output * op){
 						proc_queue[i] = 1;
 					}else{
 						if(loop == 1){
+							if(DEBUG)
+								printf("I'll handle it!\n");
+							
+							printf("master_task: Mc: %d; mc: %d; level: %d\n", master_task[0], master_task[1], master_task[2]);
+							printf("buffer: Mc: %d; mc: %d; level: %d\n", buffer[0], buffer[1], buffer[2]); 
+							
 							copy_task(master_task, buffer, task_size);
+							
+							printf("master_task: Mc: %d; mc: %d; level: %d\n", master_task[0], master_task[1], master_task[2]);
+							printf("buffer: Mc: %d; mc: %d; level: %d\n", buffer[0], buffer[1], buffer[2]);
 							#pragma omp atomic
 								loop--;
-						} else {
+						}else{
 							insert_task(&tpool, buffer, task_size);
 						}
 					}
@@ -284,6 +293,8 @@ void master(int ncl, int nvar, int ** cls, output * op){
 							p = get_proc(proc_queue, nproc - 1);
 							if(p == -1){
 								if(loop == 1){
+									if(DEBUG)
+										printf("I'll handle it!\n");
 									copy_task(master_task, buffer, task_size);
 									#pragma omp atomic
 										loop--;
