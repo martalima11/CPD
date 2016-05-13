@@ -225,7 +225,6 @@ void master(int ncl, int nvar, int ** cls, output * op){
 	if(nproc > 1){
 		/* Processor Queue. 0 - Idle ; 1 - Busy */
 		proc_queue = (int *) malloc((nproc - 1) * sizeof(int));
-		master_task = (int *) malloc(task_size * sizeof(int));
 		memset(proc_queue, 0, (nproc - 1) * sizeof(int));	
 
 		/* Task Pool */
@@ -236,6 +235,7 @@ void master(int ncl, int nvar, int ** cls, output * op){
 		init_level = min(log2(nproc), nvar);
 		task_size = nvar + 3;
 		
+		master_task = (int *) malloc(task_size * sizeof(int));
 
 		#pragma omp parallel
 		{
