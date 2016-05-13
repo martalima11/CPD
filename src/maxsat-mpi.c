@@ -202,9 +202,16 @@ void serial_solve(int * task, int nvar, int ** cls, int ncl, output * op){
 	btree->r->vars[task[TASK_level]] =  (task[TASK_level] + 1);
 
 	solve(btree->l, nvar, cls, ncl, op, 0);
+	
+	printf("PRIVATE1 OP --- max: %d; nmax: %d\t", op->max, op->nMax);
+	for(i = 0; i < nvar; i++)
+		printf("%d ", op->path[i]);
+		
+	printf("\n");
+	
 	solve(btree->r, nvar, cls, ncl, op, 0);
 	
-	printf("PRIVATE OP --- max: %d; nmax: %d\t", op->max, op->nMax);
+	printf("PRIVATE2 OP --- max: %d; nmax: %d\t", op->max, op->nMax);
 	for(i = 0; i < nvar; i++)
 		printf("%d ", op->path[i]);
 		
@@ -447,6 +454,7 @@ void slave(int id, int ncl, int nvar, int ** cls, output * op){
 			printf("Process #%d Receiving\n", id);
 		MPI_Recv(task, task_size, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
+		sleep(2);
 		/* Clean exit */
 		if(status.MPI_TAG == STOP_TAG){
 			free(task);
