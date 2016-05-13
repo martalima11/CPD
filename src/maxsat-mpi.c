@@ -273,7 +273,6 @@ void master(int ncl, int nvar, int ** cls, output * op){
 							#pragma omp atomic
 								loop--;
 								
-							sleep(3);
 						}else{
 							printf("Inserting ^^\n");
 							insert_task(&tpool, buffer, task_size);
