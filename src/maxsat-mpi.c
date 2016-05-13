@@ -192,7 +192,7 @@ void serial_solve(int * task, int nvar, int ** cls, int ncl, output * op){
 	for(i = 0; i < ncl; i++)
 		btree->cls_evals[i] = 0;
 
-	printf("serial solve   ");
+	printf("serial solve  L: %d          ", task[TASK_level]);
 	print_task(task, task[TASK_level] + TASK_level);
 	
 	btree->l = create_node(task[TASK_Mc], task[TASK_mc], task[TASK_level] + 1, ncl, btree);
