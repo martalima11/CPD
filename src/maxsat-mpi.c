@@ -397,7 +397,7 @@ void master(int ncl, int nvar, int ** cls, output * op){
 					{
 						if(DEBUG)
 							printf("Root-worker updating MAX\n");
-						updateMax(op, master_task, path_size);
+						updateMax(op, master_task, nvar);
 						printf("SER2\t");
 						print_stop(master_task, master_task[TASK_level] + 3);
 					}
