@@ -4,7 +4,6 @@
  * Inserts tasks ordered by possible calculated maximum */
 void insert_task(task_pool *tpool, int * task, int task_size){
 	task_pool aux, new_tpool;
-	int i;
 	if((*tpool) == NULL){
 		(*tpool) = (task_pool) malloc(sizeof(struct _task_pool));
 		(*tpool)->task = (int *) malloc(task_size*sizeof(int));
@@ -44,6 +43,7 @@ int get_task(task_pool *tpool, int *buff, int task_size, int max){
 	while((*tpool) != NULL){
 		if((*tpool)->task[TASK_Mc] >= max){ // if task has a maximum worth calculating
 			copy_task(buff, (*tpool)->task, task_size);
+			i = 1;
 		}
 
 		aux = (*tpool);
