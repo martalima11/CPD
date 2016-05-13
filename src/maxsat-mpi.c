@@ -203,6 +203,12 @@ void serial_solve(int * task, int nvar, int ** cls, int ncl, output * op){
 
 	solve(btree->l, nvar, cls, ncl, op, 0);
 	solve(btree->r, nvar, cls, ncl, op, 0);
+	
+	printf("PRIVATE OP --- max: %d; nmax: %d\t", op->max, op->nMax);
+	for(i = 0; i < nvar; i++)
+		printf("%d ", op->path[i]);
+		
+	printf("\n"); 
 
 	delete_node(btree->l);
 	delete_node(btree->r);
