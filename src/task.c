@@ -31,7 +31,7 @@ void insert_task(task_pool *tpool, int * task, int task_size){
 
 void copy_task(int *dst, int *src, int size){
 	int i;
-	for(i=0;i<size; i++)
+	for(i = 0; i < size; i++)
 		dst[i] = src[i];
 }
 
