@@ -388,11 +388,11 @@ void master(int ncl, int nvar, int ** cls, output * op){
 						if(DEBUG)
 							printf("Root-worker updating MAX\n");
 						updateMax(op, master_task, path_size);
+						print_task(master_task, task_size);
 					}
 					if(DEBUG)
 						printf("EXIT CRITICAL_MAX\n");
 					
-					print_task(master_task, task_size);
 					
 					#pragma omp atomic
 						loop++;			
