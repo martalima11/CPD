@@ -145,7 +145,7 @@ mpi_condor: mpi
 	
 mpi_condor_all: mpi
 	@for I in $(inputs); do \
-	condor_mpi -n $(nproc) $$(pwd)/maxsat-mpi $$(pwd)/data/$$I \
+	condor_mpi -n $(nproc) $$(pwd)/maxsat-mpi $$(pwd)/data/$$I; \
 	done;
 
 maxsat.o: maxsat.c maxsat.h
