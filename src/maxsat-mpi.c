@@ -192,8 +192,8 @@ void serial_solve(int * task, int nvar, int ** cls, int ncl, output * op){
 	for(i = 0; i < ncl; i++)
 		btree->cls_evals[i] = 0;
 	
-	btree->l = create_node(task[TASK_Mc], task[TASK_mc], task[TASK_level] + 1, ncl, btree);
-	btree->r = create_node(task[TASK_Mc], task[TASK_mc], task[TASK_level] + 1, ncl, btree);
+	btree->l = create_node(btree->Mc, btree->mc, btree->level + 1, ncl, btree);
+	btree->r = create_node(btree->Mc, btree->mc, btree->level + 1, ncl, btree);
 
 	for(i = 0; i < btree->level; i++){
 		btree->l->vars[i] = btree->vars[i];
@@ -299,6 +299,8 @@ void master(int ncl, int nvar, int ** cls, output * op){
 									#pragma omp atomic
 										loop--;
 								} else {
+									printf("INSERT\t");
+									print_task(buffer, buffer[TASK_level] + 3);
 									insert_task(&tpool, buffer, task_size);
 								}
 							}else{
@@ -318,6 +320,9 @@ void master(int ncl, int nvar, int ** cls, output * op){
 							{
 								if(DEBUG)
 									printf("ROOT updating max props to #%d\n", status.MPI_SOURCE);
+								
+								printf("STOP\t");
+								print_task(buffer, task_size);
 								updateMax(op, buffer, nvar);
 								
 							}
@@ -330,6 +335,8 @@ void master(int ncl, int nvar, int ** cls, output * op){
 									proc_queue[status.MPI_SOURCE - 1] = 0;
 									break;
 								case(0):
+									printf("GET\t");
+									print_task(buffer, buffer[TASK_level] + 3);
 									if(DEBUG)
 										printf("ROOT sends work to process #%d\n", status.MPI_SOURCE);
 									MPI_Send((void *) buffer, task_size, MPI_INT, status.MPI_SOURCE, TASK_TAG, MPI_COMM_WORLD);
@@ -375,7 +382,7 @@ void master(int ncl, int nvar, int ** cls, output * op){
 					if(DEBUG)
 						printf("ROOT working on task.\n");
 					
-					print_task(master_task, master_task[TASK_level] + 3);
+					// print_task(master_task, master_task[TASK_level] + 3);
 					serial_solve(master_task, nvar, cls, ncl, private_op);
 					updateTask(master_task, private_op, nvar);
 					
@@ -386,7 +393,7 @@ void master(int ncl, int nvar, int ** cls, output * op){
 						if(DEBUG)
 							printf("Root-worker updating MAX\n");
 						updateMax(op, master_task, path_size);
-						print_stop(master_task, master_task[TASK_level] + 3);
+						// print_stop(master_task, master_task[TASK_level] + 3);
 					}
 					if(DEBUG)
 						printf("EXIT CRITICAL_MAX\n");
