@@ -6,6 +6,8 @@ threads = 2 4 8
 
 logdir = ./data/logs
 logfile = time.log
+
+nproc = 4
 samples = 3
 
 all: serial openmp
@@ -137,6 +139,10 @@ mpi_run: mpi
 
 mpi_run_dist: mpi
 	mpirun -mca plm_rsh_agent /usr/local/bin/rnlssh --host lab13p1,lab13p2,lab13p4,lab13p5 maxsat-mpi ./data/$(input)
+
+mpi_condor: mpi
+	@location = $$(pwd)
+	condor_mpi -n $(nproc) $$(location)/maxsat-mpi $$(location)/data/$(input)   
 
 maxsat.o: maxsat.c maxsat.h
 	gcc -c -o maxsat.o maxsat.c -Wall -lm
