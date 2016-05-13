@@ -198,6 +198,11 @@ void serial_solve(int * task, int nvar, int ** cls, int ncl, output * op){
 	btree->l = create_node(task[TASK_Mc], task[TASK_mc], task[TASK_level] + 1, ncl, btree);
 	btree->r = create_node(task[TASK_Mc], task[TASK_mc], task[TASK_level] + 1, ncl, btree);
 
+	for(i = 0; i < btree->level; i++){
+		btree->l->vars[i] = btree->vars[i];
+		btree->r->vars[i] = btree->vars[i];
+	}
+
 	btree->l->vars[task[TASK_level]] = -(task[TASK_level] + 1);
 	btree->r->vars[task[TASK_level]] =  (task[TASK_level] + 1);
 
