@@ -12,7 +12,7 @@
 
 #define TASK_max  0
 #define TASK_nmax 1
-#define TASK_maxpath 2
+#define TASK_maxpath 3
 
 
 typedef struct _task_pool{
@@ -22,5 +22,9 @@ typedef struct _task_pool{
 
 void insert_task(task_pool *tpool, int * task, int task_size);
 int get_task(task_pool *tpool, int * buff, int task_size, int max);
+void copy_task(int *dst, int *src, int size);
+void print_task(int * task, int size);
+void print_stop(int * task, int size);
 
 #endif
+

@@ -1,13 +1,13 @@
 #include "task.h"
 
+/* Function used to insert a task on the list
+ * Inserts tasks ordered by possible calculated maximum */
 void insert_task(task_pool *tpool, int * task, int task_size){
 	task_pool aux, new_tpool;
-	int i;
 	if((*tpool) == NULL){
 		(*tpool) = (task_pool) malloc(sizeof(struct _task_pool));
 		(*tpool)->task = (int *) malloc(task_size*sizeof(int));
-		for(i=0;i<task_size; i++)
-			(*tpool)->task[i] = task[i];
+		copy_task((*tpool)->task, task, task_size);
 		(*tpool)->next = NULL;
 
 		return;
@@ -22,31 +22,63 @@ void insert_task(task_pool *tpool, int * task, int task_size){
 
 	new_tpool = (task_pool) malloc(sizeof(struct _task_pool));
 	new_tpool->task = (int *) malloc(task_size*sizeof(int));
-	for(i=0;i<task_size; i++)
-		new_tpool->task[i] = task[i];
+	copy_task(new_tpool->task, task, task_size);
 	new_tpool->next = aux->next;
 	aux->next = new_tpool;
 
 	return;
 }
 
+void copy_task(int *dst, int *src, int size){
+	int i;
+	for(i = 0; i < size; i++)
+		dst[i] = src[i];
+}
+
+/* Function used to get task from the list
+ * The task is then removed from memory */
 int get_task(task_pool *tpool, int *buff, int task_size, int max){
 	task_pool aux;
 	int i = 0;
 	while((*tpool) != NULL){
 		if((*tpool)->task[TASK_Mc] >= max){ // if task has a maximum worth calculating
-			for(i = 0; i < task_size; i++)
-				buff[i] = (*tpool)->task[i];
+			copy_task(buff, (*tpool)->task, task_size);
+			i = 1;
 		}
-		
+
 		aux = (*tpool);
 		(*tpool) = (*tpool)->next;
 		free(aux->task);
 		free(aux);
-		
+
 		if(i) return 0;
 	}
 
 	return -1;
+}
+
+void print_task(int * task, int size){
+	int i;
+	
+	printf("Mc: %d\t", task[TASK_Mc]);
+	printf("mc: %d\t", task[TASK_mc]);
+	printf("level: %d\t", task[TASK_level]);
+	for(i = TASK_vars; i < size; i++){
+		printf("%d ", task[i]);
+	}
+	
+	printf("\n");
+}
+
+void print_stop(int * task, int size){
+	int i;
+	
+	printf("max: %d\t", task[TASK_max]);
+	printf("nMax: %d\t", task[TASK_nmax]);
+	for(i = TASK_maxpath; i < size; i++){
+		printf("%d ", task[i]);
+	}
+	
+	printf("\n");
 }
 
