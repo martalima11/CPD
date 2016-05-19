@@ -10,7 +10,7 @@ logfile = time.log
 nproc = 4
 samples = 3
 
-all: serial openmp
+all: serial openmp mpi
 
 benchmark: serial openmp
 	@echo "Starting benchmark with $(samples) samples and saving on file $(logdir)/$(logfile)"
@@ -81,11 +81,11 @@ serial: maxsat-serial.c maxsat.o
 	gcc -o maxsat-serial maxsat-serial.c maxsat.o -Wall -lm -fopenmp
 
 serial_run: serial
-	@./maxsat-serial ./data/$(input)
+	./maxsat-serial ./data/$(input)
 
 serial_log: serial
 	@echo -n "$(input) -- " > $(logdir)/$(logfile)
-	@./maxsat-serial ./data/$(input) >> $(logdir)/$(logfile)
+	./maxsat-serial ./data/$(input) >> $(logdir)/$(logfile)
 
 serial_val: serial
 	@echo -n "$(input) - " > $(logdir)/$(logfile)
@@ -107,14 +107,15 @@ openmp: maxsat-openmp.c maxsat.o
 	gcc -o maxsat-openmp maxsat-openmp.c maxsat.o -Wall -lm -fopenmp
 
 openmp_run: openmp
-	@./maxsat-openmp ./data/$(input)
+	./maxsat-openmp ./data/$(input)
 
 openmp_run_thread: openmp
-	@./maxsat-openmp ./data/$(input) $(thread)
+	export $(thread)
+	./maxsat-openmp ./data/$(input)
 
 openmp_log: openmp
 	@echo -n "$(input) -- " > $(logdir)/$(logfile)
-	@./maxsat-openmp ./data/$(input) >> $(logdir)/$(logfile)
+	./maxsat-openmp ./data/$(input) >> $(logdir)/$(logfile)
 
 openmp_val: openmp
 	@valgrind -v --tool=helgrind ./maxsat-openmp ./data/$(input)
