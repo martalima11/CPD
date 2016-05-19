@@ -2,6 +2,7 @@
 #include "maxsat.h"
 
 #define DEBUG 0
+#define LOG 0
 
 /* Recursive function used to generate the intended results */
 void solve(node *ptr, int nvar, int **cls, int ncl, output *op){
@@ -200,7 +201,7 @@ int main(int argc, char *argv[]){
     fclose(f_in);
 
     end = omp_get_wtime();
-    printf("Elapsed time: %.09f\n", end-start);
+    if(LOG) printf("Elapsed time: %.09f\n", end-start);
 
     return 0;
 }

@@ -2,6 +2,7 @@
 #include "maxsat.h"
 
 #define DEBUG 0
+#define LOG 0
 #define LEVEL_LIMIT 5
 
 /* Recursive function used to generate the intended results */
@@ -217,7 +218,7 @@ int main(int argc, char *argv[]){
     fclose(f_in);
 
     end = omp_get_wtime();
-    printf("Elapsed time: %.09f\n", end-start);
+    if(LOG) printf("Elapsed time: %.09f\n", end-start);
 
     return 0;
 }
