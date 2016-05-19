@@ -74,7 +74,7 @@ void print_stop(int * task, int size){
 	int i;
 	
 	printf("max: %d\t", task[TASK_max]);
-	printf("nMax: %d\t", task[TASK_nmax]);
+	printf("nMax: %d\t\t", task[TASK_nmax]);
 	for(i = TASK_maxpath; i < size; i++){
 		printf("%d ", task[i]);
 	}

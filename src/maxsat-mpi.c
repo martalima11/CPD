@@ -39,6 +39,7 @@ void updateTask(int * task, output * op, int nvar){
 	return;
 }
 
+
 void updateMax(output * op, int * buffer, int path_size){
 	int i;
 	if(buffer[TASK_max] == op->max){
@@ -93,8 +94,6 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output * op, int first){
 			}
 		}
 	}
-
-
 
     /* After calculation on the current node */
     /* Check if the best possible outcome was reached
@@ -205,9 +204,9 @@ void master(int ncl, int nvar, int ** cls, output * op){
 		
 		master_task = (int *) malloc(task_size * sizeof(int));
 
-		#pragma omp parallel
+		#pragma omp parallel sections 
 		{
-			#pragma omp master
+			#pragma omp section
 			{
 				buffer = (int *) malloc(task_size * sizeof(int));
 				buffer[TASK_Mc] = ncl;
@@ -278,8 +277,8 @@ void master(int ncl, int nvar, int ** cls, output * op){
 							}
 							break;
 						case STOP_TAG:
-							if(DEBUG)
-								printf("CRITICAL_MAX\n");
+							if(DEBUG) printf("CRITICAL_MAX\n");
+							
 							#pragma omp critical(CRITICAL_MAX)
 							{
 								if(DEBUG){
@@ -287,6 +286,7 @@ void master(int ncl, int nvar, int ** cls, output * op){
 									printf("STOP\t");
 									print_stop(buffer, task_size);
 								}
+								
 								updateMax(op, buffer, nvar);
 								
 							}
@@ -327,44 +327,44 @@ void master(int ncl, int nvar, int ** cls, output * op){
 				}
 
 				/* Memory Clean-Up */
-				free(proc_queue);
 				free(buffer);
 			} // close omp master [communication]
 			
-			#pragma omp single
+			#pragma omp section
 			{
 				/* private output structure*/
 				output * private_op;
 				private_op = (output*) malloc(sizeof(output));
 				private_op->path = (int*) malloc(nvar * sizeof(int));
-				private_op->max = -1;
-				private_op->nMax = 0;
 				
 				while(!stop){
 					while(loop);
 					if(stop)
 						break;
-					if(DEBUG)
-						printf("ROOT working on task.\n");
+						
+					
+					if(DEBUG) printf("ROOT working on task.\n");
 					
 	
-					if(DEBUG) 
-						print_task(master_task, master_task[TASK_level] + 3);
+					if(DEBUG) print_task(master_task, master_task[TASK_level] + 3);
+					
+					private_op->max = -1;
+					private_op->nMax = 0;
 					serial_solve(master_task, nvar, cls, ncl, private_op);
 					updateTask(master_task, private_op, nvar);
 					
-					if(DEBUG)
-						printf("CRITICAL_MAX\n");
+					if(DEBUG) printf("CRITICAL_MAX\n");
+					
 					#pragma omp critical(CRITICAL_MAX)
 					{
-						if(DEBUG)
-							printf("Root-worker updating MAX\n");
+						if(DEBUG) printf("Root-worker updating MAX\n");
+						
 						updateMax(op, master_task, nvar);
+						
 						if(DEBUG) print_stop(master_task, master_task[TASK_level] + 3);
 					}
-					if(DEBUG)
-						printf("EXIT CRITICAL_MAX\n");
 					
+					if(DEBUG) printf("EXIT CRITICAL_MAX\n");
 					
 					#pragma omp atomic
 						loop++;			
@@ -372,6 +372,7 @@ void master(int ncl, int nvar, int ** cls, output * op){
 				free(private_op);
 			}  // close omp single [solver]
 		}
+		free(proc_queue);
 		free(master_task);
 	} else {
 		// There is only one processor
@@ -428,6 +429,7 @@ void slave(int id, int ncl, int nvar, int ** cls, output * op){
 		/* Send result */
 		/* update task with op's information */
 		updateTask(task, op, nvar);
+
 		if(DEBUG)
 			printf("Sending 'STOP' to ROOT from process #%d\n", id);
 		MPI_Send((void *) task, task_size, MPI_INT, 0, STOP_TAG, MPI_COMM_WORLD);
