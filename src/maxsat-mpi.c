@@ -56,12 +56,9 @@ void updateMax(output * op, int * buffer, int path_size){
 		op->max = buffer[TASK_max];
 		op->nMax = buffer[TASK_nmax];
 		
-		printf("UM\t ");
 		for(i = 0; i < path_size; i++){
 			 op->path[i] = buffer[TASK_maxpath + i];
-			 printf("%d ", op->path[i]);
 		}
-		printf("\n");
 	}
 	
 }
@@ -70,7 +67,7 @@ void updateMax(output * op, int * buffer, int path_size){
 void solve(node *ptr, int nvar, int **cls, int ncl, output * op, int first){
     int i, j, res;
 	int *task;
-	int task_size = nvar +3;
+	int task_size = nvar + 3;
 
 	for(i = 0; i < ncl; i++){
 		/* Initializes the position based on father node */
@@ -246,9 +243,9 @@ void master(int ncl, int nvar, int ** cls, output * op){
 		
 		master_task = (int *) malloc(task_size * sizeof(int));
 
-		#pragma omp parallel
+		#pragma omp parallel sections
 		{
-			#pragma omp master
+			#pragma omp section
 			{
 				buffer = (int *) malloc(task_size * sizeof(int));
 				buffer[TASK_Mc] = ncl;
@@ -368,18 +365,15 @@ void master(int ncl, int nvar, int ** cls, output * op){
 				}
 
 				/* Memory Clean-Up */
-				free(proc_queue);
 				free(buffer);
 			} // close omp master [communication]
 			
-			#pragma omp single
+			#pragma omp section
 			{
 				/* private output structure*/
 				output * private_op;
 				private_op = (output*) malloc(sizeof(output));
 				private_op->path = (int*) malloc(nvar * sizeof(int));
-				private_op->max = -1;
-				private_op->nMax = 0;
 				
 				while(!stop){
 					while(loop);
@@ -388,9 +382,11 @@ void master(int ncl, int nvar, int ** cls, output * op){
 					if(DEBUG)
 						printf("ROOT working on task.\n");
 					
-	
 					if(DEBUG) 
 						print_task(master_task, master_task[TASK_level] + 3);
+					
+					private_op->max = -1;
+					private_op->nMax = 0;
 					serial_solve(master_task, nvar, cls, ncl, private_op);
 					updateTask(master_task, private_op, nvar);
 					
@@ -413,6 +409,7 @@ void master(int ncl, int nvar, int ** cls, output * op){
 				free(private_op);
 			}  // close omp single [solver]
 		}
+		free(proc_queue);
 		free(master_task);
 	} else {
 		// There is only one processor
