@@ -10,7 +10,7 @@ logfile = time.log
 nproc = 4
 samples = 3
 
-all: serial openmp
+all: serial openmp mpi
 
 benchmark: serial openmp
 	@echo "Starting benchmark with $(samples) samples and saving on file $(logdir)/$(logfile)"
