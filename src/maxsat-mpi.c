@@ -108,7 +108,7 @@ void solve(node *ptr, int nvar, int **cls, int ncl, output * op, int first){
             set_path(op, ptr, nvar);
         }
     }else if(ptr->level < nvar && op->max <= ptr->Mc){
-        if(!first) ptr->l = create_node(ptr->Mc, ptr->mc, ptr->level+1, ncl, ptr);
+        if(!first) ptr->l = create_node(ptr->Mc, ptr->mc, ptr->level + 1, ncl, ptr);
         else{
 			task = (int *) malloc(task_size * sizeof(int));
 			task[TASK_Mc] = ptr->Mc;
@@ -231,16 +231,15 @@ void master(int ncl, int nvar, int ** cls, output * op){
 						MPI_Send((void *) buffer, task_size, MPI_INT, i + 1, TASK_TAG, MPI_COMM_WORLD);
 						proc_queue[i] = 1;
 					}else{
-						if(loop == 1){
+						insert_task(&tpool, buffer, task_size);
+						if(loop){
 							if(DEBUG)
 								printf("I'll handle it!\n");
-						
-							copy_task(master_task, buffer, task_size);
+										
+							get_task(&tpool, master_task, task_size, op->max);
 							#pragma omp atomic
-								loop--;		
-						}else{
-							insert_task(&tpool, buffer, task_size);
-						}
+								loop--;
+						}		
 					}
 				}
 
@@ -253,18 +252,19 @@ void master(int ncl, int nvar, int ** cls, output * op){
 						case TASK_TAG:
 							p = get_proc(proc_queue, nproc - 1);
 							if(p == -1){
-								if(loop == 1){
-									if(DEBUG)
-										printf("I'll handle it!\n");
-									copy_task(master_task, buffer, task_size);
-									#pragma omp atomic
-										loop--;
-								}else{
-									if(DEBUG){
+								if(DEBUG){
 										printf("INSERT\t");
 										print_task(buffer, buffer[TASK_level] + 3);
 									}
-									insert_task(&tpool, buffer, task_size);
+								insert_task(&tpool, buffer, task_size);
+								
+								if(loop){
+									if(DEBUG)
+										printf("I'll handle it!\n");
+										
+									get_task(&tpool, master_task, task_size, op->max);
+									#pragma omp atomic
+										loop--;
 								}
 							}else{
 								// check which is the task that it should send
