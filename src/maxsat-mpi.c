@@ -270,15 +270,14 @@ void master(int ncl, int nvar, int ** cls, output * op){
 						MPI_Send((void *) buffer, task_size, MPI_INT, i + 1, TASK_TAG, MPI_COMM_WORLD);
 						proc_queue[i] = 1;
 					}else{
+						insert_task(&tpool, buffer, task_size);
 						if(loop == 1){
 							if(DEBUG)
 								printf("I'll handle it!\n");
 						
-							copy_task(master_task, buffer, task_size);
+							get_task(&tpool, master_task, task_size, op->max);
 							#pragma omp atomic
 								loop--;		
-						}else{
-							insert_task(&tpool, buffer, task_size);
 						}
 					}
 				}
@@ -292,18 +291,20 @@ void master(int ncl, int nvar, int ** cls, output * op){
 						case TASK_TAG:
 							p = get_proc(proc_queue, nproc - 1);
 							if(p == -1){
+								if(DEBUG){
+									printf("INSERT\t");
+									print_task(buffer, buffer[TASK_level] + 3);
+								}
+								
+								insert_task(&tpool, buffer, task_size);
+								
 								if(loop == 1){
 									if(DEBUG)
 										printf("I'll handle it!\n");
-									copy_task(master_task, buffer, task_size);
+						
+									get_task(&tpool, master_task, task_size, op->max);
 									#pragma omp atomic
-										loop--;
-								}else{
-									if(DEBUG){
-										printf("INSERT\t");
-										print_task(buffer, buffer[TASK_level] + 3);
-									}
-									insert_task(&tpool, buffer, task_size);
+										loop--;		
 								}
 							}else{
 								// check which is the task that it should send
